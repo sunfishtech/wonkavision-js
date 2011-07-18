@@ -1,6 +1,7 @@
-Wonkavision = this.Wonkavision
+Client = this.Wonkavision.Client
+test_data = this.test_data
 
-describe 'Wonkavision', ->
-  describe "Client", ->
-    it "should be able to be instantiated", ->
-      expect(new Wonkavision.Client()).not.toBeNull()
+describe "Client", ->
+  it "should be able to be instantiated", ->
+    expect(Client()).not.toBeNull()
+  

@@ -1,0 +1,1 @@
+this.Wonkavision.Dimension = class Dimension

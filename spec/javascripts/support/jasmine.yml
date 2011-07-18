@@ -11,7 +11,14 @@
 #   - dist/**/*.js
 #
 src_files:
-    - src/js/**/*.js
+    - src/js/wonkavision.js
+    - src/js/cellset/dimension.js
+    - src/js/cellset/axis.js
+    - src/js/cellset/measure.js
+    - src/js/cellset/cell.js
+    - src/js/cellset.js
+
+
 
 # stylesheets
 #
