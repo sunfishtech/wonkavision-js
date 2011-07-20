@@ -9,22 +9,22 @@ this.Wonkavision.Cellset = class Cellset
     @filters = data.filters
     @totals = new Cell( this, data.totals )
     @measure_names = data.measure_names || []
-    start_index = 0
+    startIndex = 0
     @axes = for axis in (data.axes || [])
-      a = new Axis(self, axis, start_index)
-      start_index = a.end_index + 1; a
+      a = new Axis(this, axis, startIndex)
+      startIndex = a.endIndex + 1; a
 
       
     @cells = {}
     for cell in (data.cells || [])
-      @cells[cell.key] = new Cell(self, cell)
+      @cells[cell.key] = new Cell(this, cell)
     
     for axis, index in ["columns","rows","pages","chapters","sections"]
       this[axis] = @axes[index]
   
-  cell : (coordinates) ->
-    coords = if coord? then coord.toString() else coord for coord in coordinates
-    @cells[coordinates] || new Cell(this)
+  cell : () ->
+    coords = if coord? then coord.toString() else coord for coord in arguments
+    @cells[coords] || new Cell(this)
 
 
      
