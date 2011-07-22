@@ -1,7 +1,6 @@
 (function() {
-  var Axis, Cellset, responseData;
+  var Cellset, responseData;
   Cellset = this.Wonkavision.Cellset;
-  Axis = this.Wonkavision.Cellset;
   responseData = JSON.parse(this.test_data.wv_query_response);
   describe("Axis", function() {
     var axis, cellset;

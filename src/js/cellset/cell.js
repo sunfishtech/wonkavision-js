@@ -5,7 +5,7 @@
     function Cell(cellset, data) {
       var measure, _i, _len, _ref;
       this.cellset = cellset;
-      this.measures = [];
+      this.measures = {};
       this.empty = true;
       if (data) {
         _ref = data.measures;

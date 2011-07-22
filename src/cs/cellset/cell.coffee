@@ -2,7 +2,7 @@ Measure = this.Wonkavision.Measure
 
 this.Wonkavision.Cell = class Cell
   constructor : (@cellset, data) ->
-    @measures = []
+    @measures = {}
     @empty = true
     if data
       this.addMeasure(measure) for measure in data.measures

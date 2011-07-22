@@ -13,7 +13,7 @@
       _ref = data.dimensions;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         dimension = _ref[_i];
-        this.dimensions.push(new Dimension(dimension));
+        this.dimensions.push(new Dimension(this, dimension));
         this.dimensionNames.push(dimension.name);
       }
       this.endIndex = this.startIndex + this.dimensions.length - 1;

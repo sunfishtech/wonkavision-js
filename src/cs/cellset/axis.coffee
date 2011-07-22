@@ -6,7 +6,7 @@ this.Wonkavision.Axis = class Axis
 		@dimensions = []
 		@dimensionNames = []
 		for dimension in data.dimensions
-			@dimensions.push new Dimension(dimension)
+			@dimensions.push new Dimension(this, dimension)
 			@dimensionNames.push dimension.name
 			
 		@endIndex = @startIndex + @dimensions.length - 1
