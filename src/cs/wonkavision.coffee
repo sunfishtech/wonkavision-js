@@ -5,6 +5,9 @@ this.Wonkavision = class Wonkavision
       @url = options.url if options.url?
       @facts = {}
       @aggregations = {}
+      @axisNames = ["columns","rows","pages","chapters","sections"]
+
+
 
     
 
