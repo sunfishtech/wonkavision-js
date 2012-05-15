@@ -5,8 +5,12 @@ Filter = this.Wonkavision.Filter
 this.Wonkavision.Cellset = class Cellset
   constructor : (data = {}, @query=null) ->
     @aggregation = data.aggregation || null
-    @slicer = (Filter.parse f for f in data.slicer) || []
-    @filters = (Filter.parse f for f in data.filters)
+    
+    slicer = data.slicer || []
+    filters = data.filters || []
+
+    @slicer = (Filter.parse f for f in slicer)
+    @filters = (Filter.parse f for f in filters)
     @totals = new Cell( this, data.totals )
     @measure_names = data.measure_names || []
     startIndex = 0

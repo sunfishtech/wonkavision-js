@@ -43,10 +43,10 @@ this.Wonkavision.Remote = class Remote
     settings.ajax.onreadystatechange = ->
       if settings.ajax.readyState == 4
         try
-          json = JSON.parse(settings.responseText)
+          json = JSON.parse(settings.ajax.responseText)
         catch error
           #swallow it down, one gulp
-          console.log "Could not parse response as JSON:#{error}"
+          console.log "Could not parse response (#{settings.ajax.responseText}) as JSON:#{error}"
 
         data = 
           xml: settings.ajax.responseXML

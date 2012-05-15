@@ -14,14 +14,14 @@
         this.aggregations = {};
         this.axisNames = ["columns", "rows", "pages", "chapters", "sections"];
       }
-      Client.prototype.query = function(cubeName, options) {
+      Client.prototype.query = function(options) {
         if (options == null) {
           options = {};
         }
         return new Wonkavision.Query(this, options);
       };
       Client.prototype.execute = function(query, options) {
-        var data, error, raw, success;
+        var error, raw, success;
         raw = options.raw;
         success = __bind(function(data) {
           var response;
@@ -29,12 +29,8 @@
           return options.success(response);
         }, this);
         error = options.error || function() {};
-        data = this.get("query/" + query.cubeName + "/" + query.aggregationName, query.toParams(), success, error);
-        if (raw) {
-          return data;
-        } else {
-          return new Wonkavision.Cellset(data, query);
-        }
+        this.get("query/" + query.cubeName + "/" + query.aggregationName, query.toParams(), success, error);
+        return this;
       };
       Client.prototype.get = function(path, params, success, error) {
         var uri;

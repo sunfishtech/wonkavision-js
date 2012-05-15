@@ -5,28 +5,28 @@
   Filter = this.Wonkavision.Filter;
   this.Wonkavision.Cellset = Cellset = (function() {
     function Cellset(data, query) {
-      var a, axis, cell, f, index, startIndex, _i, _len, _len2, _ref, _ref2;
+      var a, axis, cell, f, filters, index, slicer, startIndex, _i, _len, _len2, _ref, _ref2;
       if (data == null) {
         data = {};
       }
       this.query = query != null ? query : null;
       this.aggregation = data.aggregation || null;
-      this.slicer = ((function() {
-        var _i, _len, _ref, _results;
-        _ref = data.slicer;
+      slicer = data.slicer || [];
+      filters = data.filters || [];
+      this.slicer = (function() {
+        var _i, _len, _results;
         _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          f = _ref[_i];
+        for (_i = 0, _len = slicer.length; _i < _len; _i++) {
+          f = slicer[_i];
           _results.push(Filter.parse(f));
         }
         return _results;
-      })()) || [];
+      })();
       this.filters = (function() {
-        var _i, _len, _ref, _results;
-        _ref = data.filters;
+        var _i, _len, _results;
         _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          f = _ref[_i];
+        for (_i = 0, _len = filters.length; _i < _len; _i++) {
+          f = filters[_i];
           _results.push(Filter.parse(f));
         }
         return _results;

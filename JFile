@@ -17,6 +17,15 @@ src_dir './src/js'
 bundle 'wonkavision.js' do
   license 'license.txt'
   file 'wonkavision.js'
+  file 'remote.js'
+  file 'filter.js'
+  file 'query.js'
+  file 'cellset/member.js'
+  file 'cellset/dimension.js'
+  file 'cellset/axis.js'
+  file 'cellset/measure.js'
+  file 'cellset/cell.js'
+  file 'cellset.js'
 end
 
 # Optional post-bundling filter, for example for string substitution

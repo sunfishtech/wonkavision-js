@@ -6,7 +6,7 @@ this.Wonkavision = class Wonkavision
       @aggregations = {}
       @axisNames = ["columns","rows","pages","chapters","sections"]
 
-    query : ( cubeName, options = {} ) ->
+    query : (options = {}) ->
       new Wonkavision.Query(this, options)
 
     execute : (query, options) ->
@@ -17,16 +17,10 @@ this.Wonkavision = class Wonkavision
 
       error = options.error || () ->
 
-      data = @get("query/#{query.cubeName}/#{query.aggregationName}", query.toParams(), success, error)
-      if raw then data else new Wonkavision.Cellset(data, query)
+      @get("query/#{query.cubeName}/#{query.aggregationName}", query.toParams(), success, error)
+      this
 
     get : (path, params, success, error) ->
       uri = @url + if @url.substr(-1) == "/" then "" else "/"
       uri = @url + path
       Wonkavision.Remote.get(uri, data : params, success: success, error: error)
-      
-
-    
-
-
-
