@@ -13,12 +13,12 @@ describe "Cellset", ->
   
   it "should extract the slicer filters", ->
     expect( cellset.slicer.length ).toEqual 2
-    expect( cellset.slicer[0] ).toEqual "dimension::context_date::key::eq::'2011-05-02'"
-    expect( cellset.slicer[1] ).toEqual "dimension::context_date::key::gt::'2011-05-02'"
+    expect( cellset.slicer[0].toString() ).toEqual "dimension::context_date::key::eq::'2011-05-02'"
+    expect( cellset.slicer[1].toString() ).toEqual "dimension::context_date::key::gt::'2011-05-02'"
   
   it "should extract the filters", ->
     expect( cellset.filters.length ).toEqual 1
-    expect( cellset.filters[0] ).toEqual "dimension::context_date::key::eq::'2011-05-02'"
+    expect( cellset.filters[0].toString() ).toEqual "dimension::context_date::key::eq::'2011-05-02'"
 
   it "should extract the totals cell", ->
     expect( cellset.totals ).not.toBeNull()

@@ -1,12 +1,12 @@
 Cell = this.Wonkavision.Cell
 Axis = this.Wonkavision.Axis
-MemberFilter = this.Wonkavision.MemberFilter
+Filter = this.Wonkavision.Filter
 
 this.Wonkavision.Cellset = class Cellset
-  constructor : (data = {}) ->
+  constructor : (data = {}, @query=null) ->
     @aggregation = data.aggregation || null
-    @slicer = data.slicer || []
-    @filters = data.filters
+    @slicer = (Filter.parse f for f in data.slicer) || []
+    @filters = (Filter.parse f for f in data.filters)
     @totals = new Cell( this, data.totals )
     @measure_names = data.measure_names || []
     startIndex = 0

@@ -12,6 +12,9 @@
 #
 src_files:
     - src/js/wonkavision.js
+    - src/js/remote.js
+    - src/js/filter.js
+    - src/js/query.js
     - src/js/cellset/member.js
     - src/js/cellset/dimension.js
     - src/js/cellset/axis.js

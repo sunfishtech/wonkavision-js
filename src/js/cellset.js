@@ -1,17 +1,36 @@
 (function() {
-  var Axis, Cell, Cellset, MemberFilter;
+  var Axis, Cell, Cellset, Filter;
   Cell = this.Wonkavision.Cell;
   Axis = this.Wonkavision.Axis;
-  MemberFilter = this.Wonkavision.MemberFilter;
+  Filter = this.Wonkavision.Filter;
   this.Wonkavision.Cellset = Cellset = (function() {
-    function Cellset(data) {
-      var a, axis, cell, index, startIndex, _i, _len, _len2, _ref, _ref2;
+    function Cellset(data, query) {
+      var a, axis, cell, f, index, startIndex, _i, _len, _len2, _ref, _ref2;
       if (data == null) {
         data = {};
       }
+      this.query = query != null ? query : null;
       this.aggregation = data.aggregation || null;
-      this.slicer = data.slicer || [];
-      this.filters = data.filters;
+      this.slicer = ((function() {
+        var _i, _len, _ref, _results;
+        _ref = data.slicer;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          f = _ref[_i];
+          _results.push(Filter.parse(f));
+        }
+        return _results;
+      })()) || [];
+      this.filters = (function() {
+        var _i, _len, _ref, _results;
+        _ref = data.filters;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          f = _ref[_i];
+          _results.push(Filter.parse(f));
+        }
+        return _results;
+      })();
       this.totals = new Cell(this, data.totals);
       this.measure_names = data.measure_names || [];
       startIndex = 0;

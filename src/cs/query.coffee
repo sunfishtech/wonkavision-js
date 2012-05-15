@@ -1,39 +1,59 @@
+Filter = this.Wonkavision.Filter
+
 this.Wonkavision.Query = class Query
-	constructor : (@client, options = {}) ->
-		for axis in @client.axisNames =>
-			this[axis] = (dimensions...) =>
-				select(axis,dimensions)
-				this
+  constructor : (@client, options = {}) ->
+    _this = this
+    for axis in @client.axisNames
+      _this[axis] = this.select(axis)
 
-		@listDelimiter = options.listDelimiter || "|"
-		@axes = []
-		@filters = []
-		@measures = []
-		@cubeName = options.cubeName || ""
-		@aggregationName = options.aggregationName || ""
+    @listDelimiter = options.listDelimiter || "|"
+    @axes = []
+    @filters = []
+    @selectedMeasures = []
+    @cubeName = options.cubeName || options.cube 
+    @aggregationName = options.aggregationName || options.aggregation
 
-	cube : (cubeName) -> @cubeName = cubeName; this
-	aggregation : (aggregationName) -> @aggregationName = aggregationName; this
+  cube : (cubeName) -> @cubeName = cubeName; this
+  aggregation : (aggregationName) -> @aggregationName = aggregationName; this
 
-	measures : (measures...) ->
-		return @measures if measures.length < 1
-		@measures.concat(measures)
-		this
+  from : (cubeName, aggregationName = cubeName) ->
+    @cubeName = cubeName
+    @aggregationName = aggregationName
+    this
 
-	where : (criteria = {}) ->
-		this
+  measures : (measures...) ->
+    @selectedMeasures = @selectedMeasures.concat(measures)
+    this
 
-	validate : ->
+  where : (criteria = {}) ->
+    @filters = @filters.concat(
+      Filter.parse(filter, ".").withValue(value) for filter, value of criteria
+    )
+    this
 
-	toHash : ->
+  toParams : ->
+    query =
+      measures: @selectedMeasures.join(@listDelimiter)
+      filters: (f.toString() for f in @filters).join(@listDelimiter)
+    query[axisName] = @getAxis(axisName).join(@listDelimiter) for axisName in @client.axisNames when @getAxis(axisName)
+    query
 
-	execute : (options = {}) ->
+  toString : -> toHash().toString()
 
-	select : (axis, dimensions) ->
-		ordinal = @client.axisNames.indexOf(axis)
-		if (ordinal >= 0)
-			@axes[ordinal] = dimensions
+  execute : (options = {}) ->
+    @client.execute(this, options)
+
+  getAxis : (axisName) -> @axes[@client.axisNames.indexOf(axisName)]
+
+  select : (axis) ->
+    (dimensions...) =>
+      ordinal = @client.axisNames.indexOf(axis)
+      if (ordinal >= 0)
+        if @axes.length > ordinal
+          dimensions = @axes[ordinal].concat(dimensions)
+        @axes[ordinal] = dimensions
+      this
 
 
 
-	
+  

@@ -8,3 +8,7 @@ gem "guard-coffeescript"
 gem 'rb-fsevent'
 gem 'growl'
 
+#Linux
+gem 'rb-inotify'
+gem 'libnotify'
+gem 'therubyracer'
