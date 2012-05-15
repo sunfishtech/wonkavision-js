@@ -20,10 +20,10 @@
         return client.query().measures("m1", "m2").columns("c1", "c2").from("payspeed").execute({
           raw: true,
           error: function(err) {
-            return alert(err);
+            return console.debug(err);
           },
           success: function(data) {
-            return alert(data);
+            return console.debug(data);
           }
         });
       });

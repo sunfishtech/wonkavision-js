@@ -50,11 +50,12 @@ OTHER DEALINGS IN THE SOFTWARE.
         raw = options.raw;
         success = __bind(function(data) {
           var response;
-          response = raw ? data : new Wonkavision.Cellset(data, query);
+          response = raw ? data : new Wonkavision.Cellset(data.json, query);
           return options.success(response);
         }, this);
         error = options.error || function() {};
-        return this.get("query/" + query.cubeName + "/" + query.aggregationName, query.toParams(), success, error);
+        this.get("query/" + query.cubeName + "/" + query.aggregationName, query.toParams(), success, error);
+        return this;
       };
       Client.prototype.get = function(path, params, success, error) {
         var uri;

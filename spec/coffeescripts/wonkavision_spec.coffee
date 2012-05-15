@@ -22,8 +22,8 @@ describe "Client", ->
         .from("payspeed")
         .execute
           raw:true
-          error : (err) -> alert(err)
-          success : (data) -> alert(data)
+          error : (err) -> console.debug(err)
+          success : (data) -> console.debug(data)
 
 
   

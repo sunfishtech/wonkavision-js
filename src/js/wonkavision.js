@@ -25,7 +25,7 @@
         raw = options.raw;
         success = __bind(function(data) {
           var response;
-          response = raw ? data : new Wonkavision.Cellset(data, query);
+          response = raw ? data : new Wonkavision.Cellset(data.json, query);
           return options.success(response);
         }, this);
         error = options.error || function() {};

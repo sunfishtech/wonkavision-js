@@ -12,7 +12,7 @@ this.Wonkavision = class Wonkavision
     execute : (query, options) ->
       raw = options.raw
       success = (data) =>
-        response = if raw then data else new Wonkavision.Cellset(data, query)
+        response = if raw then data else new Wonkavision.Cellset(data.json, query)
         options.success(response)
 
       error = options.error || () ->
