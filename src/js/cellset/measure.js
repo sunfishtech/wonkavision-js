@@ -4,7 +4,7 @@
     function Measure(data) {
       this.name = data.name;
       this.value = data.value;
-      this.formatted_value = data.formatted_value || this.value.toString();
+      this.formattedValue = data.formatted_value || this.value.toString();
       this.calculated = data.calculated || false;
       this.empty = !this.value;
     }

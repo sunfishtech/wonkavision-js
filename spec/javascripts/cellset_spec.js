@@ -26,7 +26,7 @@
       return expect(cellset.totals.key).toEqual([]);
     });
     it("should extract measure names", function() {
-      return expect(cellset.measure_names).toEqual(["count", "incoming", "outgoing", "completed", "overdue"]);
+      return expect(cellset.measureNames).toEqual(["count", "incoming", "outgoing", "completed", "overdue"]);
     });
     it("should extract the axes", function() {
       expect(cellset.axes.length).toEqual(1);

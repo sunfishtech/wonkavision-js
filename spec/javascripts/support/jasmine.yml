@@ -11,6 +11,7 @@
 #   - dist/**/*.js
 #
 src_files:
+    - lib/underscore-min.js
     - src/js/wonkavision.js
     - src/js/remote.js
     - src/js/filter.js
@@ -20,6 +21,7 @@ src_files:
     - src/js/cellset/axis.js
     - src/js/cellset/measure.js
     - src/js/cellset/cell.js
+    - src/js/cellset/transformations.js
     - src/js/cellset.js
 
 

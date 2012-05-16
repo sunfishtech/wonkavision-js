@@ -13,7 +13,7 @@
     return it("should extract the name", function() {
       expect(measure.name).toEqual("completed");
       expect(measure.value).toEqual(0);
-      return expect(measure.formatted_value).toEqual("0");
+      return expect(measure.formattedValue).toEqual("0");
     });
   });
 }).call(this);

@@ -32,7 +32,7 @@
         return _results;
       })();
       this.totals = new Cell(this, data.totals);
-      this.measure_names = data.measure_names || [];
+      this.measureNames = data.measure_names || [];
       startIndex = 0;
       this.axes = (function() {
         var _i, _len, _ref, _results;

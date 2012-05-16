@@ -12,5 +12,5 @@ describe "Measure", ->
   it "should extract the name", ->
   	expect(measure.name).toEqual "completed"
   	expect(measure.value).toEqual 0
-  	expect(measure.formatted_value).toEqual "0"
+  	expect(measure.formattedValue).toEqual "0"
 

@@ -25,6 +25,23 @@ bundle 'wonkavision.js' do
   file 'cellset/axis.js'
   file 'cellset/measure.js'
   file 'cellset/cell.js'
+  file 'cellset/transformations.js'
+  file 'cellset.js'
+end
+
+bundle 'wonkavision-dep.js' do
+  license 'license.txt'
+  file 'underscore-min.js'
+  file 'wonkavision.js'
+  file 'remote.js'
+  file 'filter.js'
+  file 'query.js'
+  file 'cellset/member.js'
+  file 'cellset/dimension.js'
+  file 'cellset/axis.js'
+  file 'cellset/measure.js'
+  file 'cellset/cell.js'
+  file 'cellset/transformations.js'
   file 'cellset.js'
 end
 
