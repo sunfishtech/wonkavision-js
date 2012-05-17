@@ -1,17 +1,24 @@
 Filter = this.Wonkavision.Filter
 
 this.Wonkavision.Query = class Query
-  constructor : (@client, options = {}) ->
+  constructor : (@client, query = {}) ->
     _this = this
     for axis in Wonkavision.AXIS_NAMES
       _this[axis] = this.select(axis)
 
-    @listDelimiter = options.listDelimiter || "|"
+    @listDelimiter = query.listDelimiter || "|"
     @axes = []
     @filters = []
     @selectedMeasures = []
-    @cubeName = options.cubeName || options.cube 
-    @aggregationName = options.aggregationName || options.aggregation
+
+    for axis in Wonkavision.AXIS_NAMES
+      this[axis](query[axis]) if query[axis]?
+    @measures(query.measures) if query.measures?
+    @where(query.where) if query.where?
+    @from(query.from) if query.from?
+    @cube(query.cube) if query.cube?
+    @aggregation(query.aggregation) if query.aggregation?
+
 
   cube : (cubeName) -> @cubeName = cubeName; this
   aggregation : (aggregationName) -> @aggregationName = aggregationName; this
@@ -22,7 +29,7 @@ this.Wonkavision.Query = class Query
     this
 
   measures : (measures...) ->
-    @selectedMeasures = @selectedMeasures.concat(measures)
+    @selectedMeasures = @selectedMeasures.concat(_.flatten(measures))
     this
 
   where : (criteria = {}) ->
@@ -51,7 +58,7 @@ this.Wonkavision.Query = class Query
       if (ordinal >= 0)
         if @axes.length > ordinal
           dimensions = @axes[ordinal].concat(dimensions)
-        @axes[ordinal] = dimensions
+        @axes[ordinal] = _.flatten(dimensions)
       this
 
 

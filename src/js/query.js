@@ -3,11 +3,11 @@
   var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   Filter = this.Wonkavision.Filter;
   this.Wonkavision.Query = Query = (function() {
-    function Query(client, options) {
-      var axis, _i, _len, _ref, _this;
+    function Query(client, query) {
+      var axis, _i, _j, _len, _len2, _ref, _ref2, _this;
       this.client = client;
-      if (options == null) {
-        options = {};
+      if (query == null) {
+        query = {};
       }
       _this = this;
       _ref = Wonkavision.AXIS_NAMES;
@@ -15,12 +15,32 @@
         axis = _ref[_i];
         _this[axis] = this.select(axis);
       }
-      this.listDelimiter = options.listDelimiter || "|";
+      this.listDelimiter = query.listDelimiter || "|";
       this.axes = [];
       this.filters = [];
       this.selectedMeasures = [];
-      this.cubeName = options.cubeName || options.cube;
-      this.aggregationName = options.aggregationName || options.aggregation;
+      _ref2 = Wonkavision.AXIS_NAMES;
+      for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+        axis = _ref2[_j];
+        if (query[axis] != null) {
+          this[axis](query[axis]);
+        }
+      }
+      if (query.measures != null) {
+        this.measures(query.measures);
+      }
+      if (query.where != null) {
+        this.where(query.where);
+      }
+      if (query.from != null) {
+        this.from(query.from);
+      }
+      if (query.cube != null) {
+        this.cube(query.cube);
+      }
+      if (query.aggregation != null) {
+        this.aggregation(query.aggregation);
+      }
     }
     Query.prototype.cube = function(cubeName) {
       this.cubeName = cubeName;
@@ -41,7 +61,7 @@
     Query.prototype.measures = function() {
       var measures;
       measures = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      this.selectedMeasures = this.selectedMeasures.concat(measures);
+      this.selectedMeasures = this.selectedMeasures.concat(_.flatten(measures));
       return this;
     };
     Query.prototype.where = function(criteria) {
@@ -105,7 +125,7 @@
           if (this.axes.length > ordinal) {
             dimensions = this.axes[ordinal].concat(dimensions);
           }
-          this.axes[ordinal] = dimensions;
+          this.axes[ordinal] = _.flatten(dimensions);
         }
         return this;
       }, this);

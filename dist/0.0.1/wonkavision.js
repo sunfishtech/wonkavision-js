@@ -37,7 +37,6 @@ OTHER DEALINGS IN THE SOFTWARE.
         this.url = options.url || "";
         this.facts = {};
         this.aggregations = {};
-        this.axisNames = ["columns", "rows", "pages", "chapters", "sections"];
       }
       Client.prototype.query = function(options) {
         if (options == null) {
@@ -71,6 +70,7 @@ OTHER DEALINGS IN THE SOFTWARE.
     })();
     return Wonkavision;
   })();
+  this.Wonkavision.AXIS_NAMES = ["columns", "rows", "pages", "chapters", "sections"];
 }).call(this);
 
 (function() {
@@ -231,24 +231,44 @@ OTHER DEALINGS IN THE SOFTWARE.
   var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   Filter = this.Wonkavision.Filter;
   this.Wonkavision.Query = Query = (function() {
-    function Query(client, options) {
-      var axis, _i, _len, _ref, _this;
+    function Query(client, query) {
+      var axis, _i, _j, _len, _len2, _ref, _ref2, _this;
       this.client = client;
-      if (options == null) {
-        options = {};
+      if (query == null) {
+        query = {};
       }
       _this = this;
-      _ref = this.client.axisNames;
+      _ref = Wonkavision.AXIS_NAMES;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         axis = _ref[_i];
         _this[axis] = this.select(axis);
       }
-      this.listDelimiter = options.listDelimiter || "|";
+      this.listDelimiter = query.listDelimiter || "|";
       this.axes = [];
       this.filters = [];
       this.selectedMeasures = [];
-      this.cubeName = options.cubeName || options.cube;
-      this.aggregationName = options.aggregationName || options.aggregation;
+      _ref2 = Wonkavision.AXIS_NAMES;
+      for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+        axis = _ref2[_j];
+        if (query[axis] != null) {
+          this[axis](query[axis]);
+        }
+      }
+      if (query.measures != null) {
+        this.measures(query.measures);
+      }
+      if (query.where != null) {
+        this.where(query.where);
+      }
+      if (query.from != null) {
+        this.from(query.from);
+      }
+      if (query.cube != null) {
+        this.cube(query.cube);
+      }
+      if (query.aggregation != null) {
+        this.aggregation(query.aggregation);
+      }
     }
     Query.prototype.cube = function(cubeName) {
       this.cubeName = cubeName;
@@ -269,7 +289,7 @@ OTHER DEALINGS IN THE SOFTWARE.
     Query.prototype.measures = function() {
       var measures;
       measures = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      this.selectedMeasures = this.selectedMeasures.concat(measures);
+      this.selectedMeasures = this.selectedMeasures.concat(_.flatten(measures));
       return this;
     };
     Query.prototype.where = function(criteria) {
@@ -303,7 +323,7 @@ OTHER DEALINGS IN THE SOFTWARE.
           return _results;
         }).call(this)).join(this.listDelimiter)
       };
-      _ref = this.client.axisNames;
+      _ref = Wonkavision.AXIS_NAMES;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         axisName = _ref[_i];
         if (this.getAxis(axisName)) {
@@ -322,18 +342,18 @@ OTHER DEALINGS IN THE SOFTWARE.
       return this.client.execute(this, options);
     };
     Query.prototype.getAxis = function(axisName) {
-      return this.axes[this.client.axisNames.indexOf(axisName)];
+      return this.axes[Wonkavision.AXIS_NAMES.indexOf(axisName)];
     };
     Query.prototype.select = function(axis) {
       return __bind(function() {
         var dimensions, ordinal;
         dimensions = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-        ordinal = this.client.axisNames.indexOf(axis);
+        ordinal = Wonkavision.AXIS_NAMES.indexOf(axis);
         if (ordinal >= 0) {
           if (this.axes.length > ordinal) {
             dimensions = this.axes[ordinal].concat(dimensions);
           }
-          this.axes[ordinal] = dimensions;
+          this.axes[ordinal] = _.flatten(dimensions);
         }
         return this;
       }, this);
@@ -348,6 +368,7 @@ OTHER DEALINGS IN THE SOFTWARE.
     function Member(data) {
       this.key = data.key;
       this.caption = data.caption || this.key;
+      this.sort = data.sort || this.key;
       this.attributes = data.attributes || {};
     }
     Member.prototype.toString = function() {
@@ -365,48 +386,29 @@ OTHER DEALINGS IN THE SOFTWARE.
   Member = this.Wonkavision.Member;
   this.Wonkavision.Dimension = Dimension = (function() {
     function Dimension(axis, data) {
-      var member, _i, _len, _ref;
       this.axis = axis;
       this.name = data.name;
-      this.members = [];
-      _ref = data.members;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        member = _ref[_i];
-        this.members.push(new Member(member));
-      }
+      this.members = _.sortBy(_.map(data.members, function(mem) {
+        return new Member(mem);
+      }), function(member) {
+        return member.sort;
+      });
     }
-    Dimension.prototype.nonEmpty = function(parents) {
-      var mem, members, _i, _len, _ref;
-      members = [];
-      _ref = this.members;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        mem = _ref[_i];
-        if (!(typeof this.isEmpty === "function" ? this.isEmpty(mem, parents) : void 0)) {
-          members.push(mem);
-        }
-      }
-      return members;
-    };
-    Dimension.prototype.isEmpty = function(member, parents) {
-      var key;
-      key = parents.slice(0);
-      key.push(member.key);
-      return this.axis.totals[key].empty;
-    };
     return Dimension;
   })();
 }).call(this);
 
 (function() {
-  var Axis, Dimension;
+  var Axis, Dimension, Level, LevelCollection;
+  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   Dimension = this.Wonkavision.Dimension;
   this.Wonkavision.Axis = Axis = (function() {
-    var MemberInfo;
-    function Axis(cellset, data, startIndex) {
+    function Axis(name, cellset, data, startIndex) {
       var dimension, _i, _len, _ref;
+      this.name = name;
       this.cellset = cellset;
       this.startIndex = startIndex;
-      this.members = {};
+      this.levels = new LevelCollection();
       this.dimensions = [];
       this.dimensionNames = [];
       _ref = data.dimensions;
@@ -416,6 +418,7 @@ OTHER DEALINGS IN THE SOFTWARE.
         this.dimensionNames.push(dimension.name);
       }
       this.endIndex = this.startIndex + this.dimensions.length - 1;
+      this.initLevels();
     }
     Axis.prototype.dimensionNames = function() {
       var d, _i, _len, _ref, _results;
@@ -427,51 +430,120 @@ OTHER DEALINGS IN THE SOFTWARE.
       }
       return _results;
     };
-    Axis.prototype.totals = function() {
-      var coord, coords, _base;
-      coords = (function() {
-        var _i, _len, _results;
-        if (typeof coord !== "undefined" && coord !== null) {
-          return coord.toString();
-        } else {
-          _results = [];
-          for (_i = 0, _len = arguments.length; _i < _len; _i++) {
-            coord = arguments[_i];
-            _results.push(coord);
-          }
-          return _results;
-        }
-      }).apply(this, arguments);
-      return (_base = this.members)[coords] || (_base[coords] = new MemberInfo(this, coords));
-    };
-    MemberInfo = (function() {
-      function MemberInfo(axis, key) {
-        var i, val, _len, _ref;
-        this.axis = axis;
-        this.key = key;
-        this.cellKey = ((function() {
-          var _ref, _results;
-          _results = [];
-          for (i = 0, _ref = this.axis.startIndex; 0 <= _ref ? i < _ref : i > _ref; 0 <= _ref ? i++ : i--) {
-            _results.push(null);
-          }
-          return _results;
-        }).call(this)) || [];
-        this.cellKey.push(this.key);
-        this.totals = this.axis.cellset.cell(this.cellKey);
-        this.descendentKeys = [];
-        _ref = this.axis.cellset.cells;
-        for (val = 0, _len = _ref.length; val < _len; val++) {
-          key = _ref[val];
-          if (key.length > this.cellKey.length && key.length <= this.axis.endIndex + 1 && key.slice(0, (this.cellKey.length + 1) || 9e9) === this.cellKey) {
-            this.descendentKeys.push(key);
-          }
-        }
-        this.empty = this.totals.empty;
+    Axis.prototype.initLevels = function(key, parent) {
+      var childKey, depth, level, member, _i, _len, _ref, _results;
+      if (key == null) {
+        key = [];
       }
-      return MemberInfo;
-    })();
+      if (parent == null) {
+        parent = this;
+      }
+      depth = key.length;
+      if (depth < this.dimensions.length) {
+        _ref = this.dimensions[depth].members;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          member = _ref[_i];
+          childKey = key.slice(0);
+          childKey.push(member.key);
+          level = parent.levels.push(new Level(childKey, parent, depth + this.startIndex, member));
+          _results.push(this.initLevels(childKey, level));
+        }
+        return _results;
+      }
+    };
+    Axis.prototype.registerCell = function(cell) {
+      var level, levelKey;
+      levelKey = cell.key.slice(this.startIndex, (this.startIndex + 1) || 9e9);
+      level = this.levels.get(levelKey);
+      return level.registerCell(cell);
+    };
     return Axis;
+  })();
+  this.Wonkavision.Level = Level = (function() {
+    function Level(key, parent, keyIndex, member) {
+      this.key = key;
+      this.parent = parent;
+      this.keyIndex = keyIndex;
+      this.member = member;
+      this.axis = this.parent.axis != null ? this.parent.axis : this.parent;
+      this.caption = this.member.caption;
+      this.depth = this.keyIndex - this.axis.startIndex;
+      this.isEmpty = true;
+      this.isLeaf = this.keyIndex === this.axis.endIndex;
+      if (!this.isLeaf) {
+        this.levels = new LevelCollection();
+      }
+    }
+    Level.prototype.leaves = function(nonEmpty) {
+      if (nonEmpty == null) {
+        nonEmpty = false;
+      }
+      if (this.isLeaf) {
+        return [this];
+      } else {
+        return this.levels.leaves(nonEmpty);
+      }
+    };
+    Level.prototype.registerCell = function(cell) {
+      var child, childIndex, childKey;
+      this.isEmpty = false;
+      if (!this.isLeaf) {
+        childIndex = this.keyIndex + 1;
+        childKey = cell.key.slice(this.axis.startIndex, (childIndex + 1) || 9e9);
+        child = this.levels.get(childKey);
+        return child.registerCell(cell);
+      }
+    };
+    return Level;
+  })();
+  this.Wonkavision.LevelCollection = LevelCollection = (function() {
+    function LevelCollection(levels, isNonEmpty) {
+      if (levels == null) {
+        levels = [];
+      }
+      this.isNonEmpty = isNonEmpty != null ? isNonEmpty : false;
+      this.levels = [];
+      this.length = 0;
+      _.each(levels, __bind(function(level) {
+        return this.push(level);
+      }, this));
+    }
+    LevelCollection.prototype.get = function(key) {
+      return _.find(this.levels, function(l) {
+        return l.key.toString() === key.toString();
+      });
+    };
+    LevelCollection.prototype.push = function(level) {
+      this.length += 1;
+      this.levels.push(level);
+      return level;
+    };
+    LevelCollection.prototype.each = function(callback) {
+      return _.each(this.levels, callback);
+    };
+    LevelCollection.prototype.nonEmpty = function() {
+      return new LevelCollection(_.filter(this.levels, function(level) {
+        return !level.isEmpty;
+      }), true);
+    };
+    LevelCollection.prototype.leaves = function(nonEmpty) {
+      var levels;
+      if (nonEmpty == null) {
+        nonEmpty = this.isNonEmpty;
+      }
+      levels = nonEmpty ? this.nonEmpty().levels : this.levels;
+      return _.flatten(_.map(levels, function(level) {
+        return level.leaves(nonEmpty);
+      }));
+    };
+    LevelCollection.prototype.at = function(idx) {
+      return this.levels[idx];
+    };
+    LevelCollection.prototype.toArray = function() {
+      return this.levels;
+    };
+    return LevelCollection;
   })();
 }).call(this);
 
@@ -481,7 +553,7 @@ OTHER DEALINGS IN THE SOFTWARE.
     function Measure(data) {
       this.name = data.name;
       this.value = data.value;
-      this.formatted_value = data.formatted_value || this.value.toString();
+      this.formattedValue = data.formatted_value || this.value.toString();
       this.calculated = data.calculated || false;
       this.empty = !this.value;
     }
@@ -507,7 +579,6 @@ OTHER DEALINGS IN THE SOFTWARE.
           measure = _ref[_i];
           this.addMeasure(measure);
         }
-        this.dimensions = data.dimensions;
         this.key = data.key;
       }
     }
@@ -525,13 +596,17 @@ OTHER DEALINGS IN THE SOFTWARE.
 }).call(this);
 
 (function() {
+  this.Wonkavision.Transformations = {};
+}).call(this);
+
+(function() {
   var Axis, Cell, Cellset, Filter;
   Cell = this.Wonkavision.Cell;
   Axis = this.Wonkavision.Axis;
   Filter = this.Wonkavision.Filter;
   this.Wonkavision.Cellset = Cellset = (function() {
     function Cellset(data, query) {
-      var a, axis, cell, f, filters, index, slicer, startIndex, _i, _len, _len2, _ref, _ref2;
+      var a, axis, cell, f, filters, i, index, name, slicer, startIndex, _i, _j, _len, _len2, _len3, _ref, _ref2, _ref3;
       if (data == null) {
         data = {};
       }
@@ -558,15 +633,15 @@ OTHER DEALINGS IN THE SOFTWARE.
         return _results;
       })();
       this.totals = new Cell(this, data.totals);
-      this.measure_names = data.measure_names || [];
+      this.measureNames = data.measure_names || [];
       startIndex = 0;
       this.axes = (function() {
-        var _i, _len, _ref, _results;
-        _ref = data.axes || [];
+        var _ref, _results;
         _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          axis = _ref[_i];
-          a = new Axis(this, axis, startIndex);
+        for (i = 0, _ref = data.axes.length; 0 <= _ref ? i < _ref : i > _ref; 0 <= _ref ? i++ : i--) {
+          axis = data.axes[i];
+          name = Wonkavision.AXIS_NAMES[i];
+          a = new Axis(name, this, axis, startIndex);
           startIndex = a.endIndex + 1;
           _results.push(a);
         }
@@ -577,10 +652,15 @@ OTHER DEALINGS IN THE SOFTWARE.
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         cell = _ref[_i];
         this.cells[cell.key] = new Cell(this, cell);
+        _ref2 = this.axes;
+        for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+          axis = _ref2[_j];
+          axis.registerCell(cell);
+        }
       }
-      _ref2 = ["columns", "rows", "pages", "chapters", "sections"];
-      for (index = 0, _len2 = _ref2.length; index < _len2; index++) {
-        axis = _ref2[index];
+      _ref3 = Wonkavision.AXIS_NAMES;
+      for (index = 0, _len3 = _ref3.length; index < _len3; index++) {
+        axis = _ref3[index];
         this[axis] = this.axes[index];
       }
     }
