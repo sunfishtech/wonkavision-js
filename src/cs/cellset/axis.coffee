@@ -1,9 +1,8 @@
 Dimension = this.Wonkavision.Dimension
 
-
 this.Wonkavision.Axis = class Axis
   constructor : (@name, @cellset, data, @startIndex) ->
-    @levels = {}
+    @levels = new LevelCollection()
     @dimensions = []
     @dimensionNames = []
     for dimension in data.dimensions
@@ -22,30 +21,55 @@ this.Wonkavision.Axis = class Axis
       for member in @dimensions[depth].members
         childKey = key.slice(0)
         childKey.push(member.key)
-        level = parent.levels[childKey] = new Level(childKey, parent, depth + @startIndex)
+        level = parent.levels.push new Level(childKey, parent, depth + @startIndex, member)
         @initLevels(childKey, level)
 
   registerCell : (cell) ->
     levelKey = cell.key[@startIndex..@startIndex]
-    level = @levels[levelKey]
+    level = @levels.get(levelKey)
     level.registerCell(cell)
 
+#----- Level -----------------------
 this.Wonkavision.Level = class Level
-  constructor : (@key, @parent, @keyIndex) ->
+  constructor : (@key, @parent, @keyIndex, @member) ->
     @axis = if @parent.axis? then @parent.axis else @parent
-    @name = @key.slice(-1)[0] if @key?
+    @caption = @member.caption
     @depth = @keyIndex - @axis.startIndex
 
     @isEmpty = true
     @isLeaf = (@keyIndex == @axis.endIndex)
-    @isRoot = (@depth == 0)
-    unless @isLeaf
-      @levels = {}
+    @levels = new LevelCollection() unless @isLeaf
+
+  leaves : (nonEmpty = false) -> if @isLeaf then [this] else @levels.leaves(nonEmpty)
 
   registerCell : (cell) ->
     @isEmpty = false
     unless @isLeaf
       childIndex = @keyIndex + 1
       childKey = cell.key[@axis.startIndex..childIndex]
-      child = (@levels[childKey] ||= new Level(childKey, this, childIndex))
+      child = @levels.get(childKey)
       child.registerCell(cell)
+
+#----- Level Collection ----------------------------------
+this.Wonkavision.LevelCollection = class LevelCollection
+  constructor : (levels = [], @isNonEmpty = false) ->
+    @levels = []
+    @length = 0
+    _.each levels, (level) => @push(level)
+
+  get : (key) -> _.find @levels, (l) -> l.key.toString() == key.toString()
+
+  push : (level) -> @length += 1; @levels.push(level); level
+
+  each : (callback) -> _.each(@levels, callback)
+
+  nonEmpty : ->
+    new LevelCollection( _.filter( @levels, (level) -> !level.isEmpty ), true )
+
+  leaves : (nonEmpty = @isNonEmpty) ->
+    levels = if nonEmpty then @nonEmpty().levels else @levels
+    _.flatten( _.map( levels, (level) -> level.leaves(nonEmpty) ))
+
+  at : (idx) -> @levels[idx]
+
+  toArray : -> @levels

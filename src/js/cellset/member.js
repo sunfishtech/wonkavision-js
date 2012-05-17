@@ -4,6 +4,7 @@
     function Member(data) {
       this.key = data.key;
       this.caption = data.caption || this.key;
+      this.sort = data.sort || this.key;
       this.attributes = data.attributes || {};
     }
     Member.prototype.toString = function() {
