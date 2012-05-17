@@ -3,7 +3,7 @@ Filter = this.Wonkavision.Filter
 this.Wonkavision.Query = class Query
   constructor : (@client, options = {}) ->
     _this = this
-    for axis in @client.axisNames
+    for axis in Wonkavision.AXIS_NAMES
       _this[axis] = this.select(axis)
 
     @listDelimiter = options.listDelimiter || "|"
@@ -35,7 +35,7 @@ this.Wonkavision.Query = class Query
     query =
       measures: @selectedMeasures.join(@listDelimiter)
       filters: (f.toString() for f in @filters).join(@listDelimiter)
-    query[axisName] = @getAxis(axisName).join(@listDelimiter) for axisName in @client.axisNames when @getAxis(axisName)
+    query[axisName] = @getAxis(axisName).join(@listDelimiter) for axisName in Wonkavision.AXIS_NAMES when @getAxis(axisName)
     query
 
   toString : -> toHash().toString()
@@ -43,11 +43,11 @@ this.Wonkavision.Query = class Query
   execute : (options = {}) ->
     @client.execute(this, options)
 
-  getAxis : (axisName) -> @axes[@client.axisNames.indexOf(axisName)]
+  getAxis : (axisName) -> @axes[Wonkavision.AXIS_NAMES.indexOf(axisName)]
 
   select : (axis) ->
     (dimensions...) =>
-      ordinal = @client.axisNames.indexOf(axis)
+      ordinal = Wonkavision.AXIS_NAMES.indexOf(axis)
       if (ordinal >= 0)
         if @axes.length > ordinal
           dimensions = @axes[ordinal].concat(dimensions)

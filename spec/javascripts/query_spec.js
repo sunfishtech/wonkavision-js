@@ -16,7 +16,7 @@
     describe("axis query methods", function() {
       it("should create select method for each axis", function() {
         var axis, _i, _len, _ref, _results;
-        _ref = client.axisNames;
+        _ref = Wonkavision.AXIS_NAMES;
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           axis = _ref[_i];

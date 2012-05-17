@@ -5,7 +5,7 @@
   Filter = this.Wonkavision.Filter;
   this.Wonkavision.Cellset = Cellset = (function() {
     function Cellset(data, query) {
-      var a, axis, cell, f, filters, index, slicer, startIndex, _i, _len, _len2, _ref, _ref2;
+      var a, axis, cell, f, filters, i, index, name, slicer, startIndex, _i, _j, _len, _len2, _len3, _ref, _ref2, _ref3;
       if (data == null) {
         data = {};
       }
@@ -35,12 +35,12 @@
       this.measureNames = data.measure_names || [];
       startIndex = 0;
       this.axes = (function() {
-        var _i, _len, _ref, _results;
-        _ref = data.axes || [];
+        var _ref, _results;
         _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          axis = _ref[_i];
-          a = new Axis(this, axis, startIndex);
+        for (i = 0, _ref = data.axes.length; 0 <= _ref ? i < _ref : i > _ref; 0 <= _ref ? i++ : i--) {
+          axis = data.axes[i];
+          name = Wonkavision.AXIS_NAMES[i];
+          a = new Axis(name, this, axis, startIndex);
           startIndex = a.endIndex + 1;
           _results.push(a);
         }
@@ -51,10 +51,15 @@
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         cell = _ref[_i];
         this.cells[cell.key] = new Cell(this, cell);
+        _ref2 = this.axes;
+        for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+          axis = _ref2[_j];
+          axis.registerCell(cell);
+        }
       }
-      _ref2 = ["columns", "rows", "pages", "chapters", "sections"];
-      for (index = 0, _len2 = _ref2.length; index < _len2; index++) {
-        axis = _ref2[index];
+      _ref3 = Wonkavision.AXIS_NAMES;
+      for (index = 0, _len3 = _ref3.length; index < _len3; index++) {
+        axis = _ref3[index];
         this[axis] = this.axes[index];
       }
     }

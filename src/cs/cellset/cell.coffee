@@ -6,7 +6,6 @@ this.Wonkavision.Cell = class Cell
     @empty = true
     if data
       this.addMeasure(measure) for measure in data.measures
-      @dimensions = data.dimensions
       @key = data.key
   
   

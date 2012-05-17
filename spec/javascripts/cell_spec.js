@@ -13,7 +13,6 @@
     });
     it("should extract the measures", function() {
       expect(cell.empty).not.toBeTruthy();
-      expect(cell.dimensions).toEqual(["context_date"]);
       return expect(cell.key).toEqual(["2011-05-02"]);
     });
     it("should return empty if no data is provided", function() {

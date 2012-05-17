@@ -22,7 +22,6 @@ describe "Cellset", ->
 
   it "should extract the totals cell", ->
     expect( cellset.totals ).not.toBeNull()
-    expect( cellset.totals.dimensions.length ).toEqual 0
     expect( cellset.totals.key ).toEqual []
 
   it "should extract measure names", ->

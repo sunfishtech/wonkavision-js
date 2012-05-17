@@ -22,7 +22,6 @@
     });
     it("should extract the totals cell", function() {
       expect(cellset.totals).not.toBeNull();
-      expect(cellset.totals.dimensions.length).toEqual(0);
       return expect(cellset.totals.key).toEqual([]);
     });
     it("should extract measure names", function() {

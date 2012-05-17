@@ -15,7 +15,7 @@ describe "Query", ->
 
   describe "axis query methods", ->
     it "should create select method for each axis", ->
-      for axis in client.axisNames
+      for axis in Wonkavision.AXIS_NAMES
         expect(query[axis]).not.toBeNull
 
     it "should configure axis selections from the axis methods", ->

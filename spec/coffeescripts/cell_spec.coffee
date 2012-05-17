@@ -14,7 +14,6 @@ describe "Cell", ->
 
   it "should extract the measures", ->
     expect(cell.empty).not.toBeTruthy()
-    expect(cell.dimensions).toEqual ["context_date"]
     expect(cell.key).toEqual ["2011-05-02"]
 
   it "should return empty if no data is provided", ->

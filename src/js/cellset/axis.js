@@ -1,13 +1,13 @@
 (function() {
-  var Axis, Dimension;
+  var Axis, Dimension, Level;
   Dimension = this.Wonkavision.Dimension;
   this.Wonkavision.Axis = Axis = (function() {
-    var MemberInfo;
-    function Axis(cellset, data, startIndex) {
+    function Axis(name, cellset, data, startIndex) {
       var dimension, _i, _len, _ref;
+      this.name = name;
       this.cellset = cellset;
       this.startIndex = startIndex;
-      this.members = {};
+      this.levels = {};
       this.dimensions = [];
       this.dimensionNames = [];
       _ref = data.dimensions;
@@ -17,6 +17,7 @@
         this.dimensionNames.push(dimension.name);
       }
       this.endIndex = this.startIndex + this.dimensions.length - 1;
+      this.initLevels();
     }
     Axis.prototype.dimensionNames = function() {
       var d, _i, _len, _ref, _results;
@@ -28,50 +29,63 @@
       }
       return _results;
     };
-    Axis.prototype.totals = function() {
-      var coord, coords, _base;
-      coords = (function() {
-        var _i, _len, _results;
-        if (typeof coord !== "undefined" && coord !== null) {
-          return coord.toString();
-        } else {
-          _results = [];
-          for (_i = 0, _len = arguments.length; _i < _len; _i++) {
-            coord = arguments[_i];
-            _results.push(coord);
-          }
-          return _results;
-        }
-      }).apply(this, arguments);
-      return (_base = this.members)[coords] || (_base[coords] = new MemberInfo(this, coords));
-    };
-    MemberInfo = (function() {
-      function MemberInfo(axis, key) {
-        var i, val, _len, _ref;
-        this.axis = axis;
-        this.key = key;
-        this.cellKey = ((function() {
-          var _ref, _results;
-          _results = [];
-          for (i = 0, _ref = this.axis.startIndex; 0 <= _ref ? i < _ref : i > _ref; 0 <= _ref ? i++ : i--) {
-            _results.push(null);
-          }
-          return _results;
-        }).call(this)) || [];
-        this.cellKey.push(this.key);
-        this.totals = this.axis.cellset.cell(this.cellKey);
-        this.descendentKeys = [];
-        _ref = this.axis.cellset.cells;
-        for (val = 0, _len = _ref.length; val < _len; val++) {
-          key = _ref[val];
-          if (key.length > this.cellKey.length && key.length <= this.axis.endIndex + 1 && key.slice(0, (this.cellKey.length + 1) || 9e9) === this.cellKey) {
-            this.descendentKeys.push(key);
-          }
-        }
-        this.empty = this.totals.empty;
+    Axis.prototype.initLevels = function(key, parent) {
+      var childKey, depth, level, member, _i, _len, _ref, _results;
+      if (key == null) {
+        key = [];
       }
-      return MemberInfo;
-    })();
+      if (parent == null) {
+        parent = this;
+      }
+      depth = key.length;
+      if (depth < this.dimensions.length) {
+        _ref = this.dimensions[depth].members;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          member = _ref[_i];
+          childKey = key.slice(0);
+          childKey.push(member.key);
+          level = parent.levels[childKey] = new Level(childKey, parent, depth + this.startIndex);
+          _results.push(this.initLevels(childKey, level));
+        }
+        return _results;
+      }
+    };
+    Axis.prototype.registerCell = function(cell) {
+      var level, levelKey;
+      levelKey = cell.key.slice(this.startIndex, (this.startIndex + 1) || 9e9);
+      level = this.levels[levelKey];
+      return level.registerCell(cell);
+    };
     return Axis;
+  })();
+  this.Wonkavision.Level = Level = (function() {
+    function Level(key, parent, keyIndex) {
+      this.key = key;
+      this.parent = parent;
+      this.keyIndex = keyIndex;
+      this.axis = this.parent.axis != null ? this.parent.axis : this.parent;
+      if (this.key != null) {
+        this.name = this.key.slice(-1)[0];
+      }
+      this.depth = this.keyIndex - this.axis.startIndex;
+      this.isEmpty = true;
+      this.isLeaf = this.keyIndex === this.axis.endIndex;
+      this.isRoot = this.depth === 0;
+      if (!this.isLeaf) {
+        this.levels = {};
+      }
+    }
+    Level.prototype.registerCell = function(cell) {
+      var child, childIndex, childKey, _base;
+      this.isEmpty = false;
+      if (!this.isLeaf) {
+        childIndex = this.keyIndex + 1;
+        childKey = cell.key.slice(this.axis.startIndex, (childIndex + 1) || 9e9);
+        child = ((_base = this.levels)[childKey] || (_base[childKey] = new Level(childKey, this, childIndex)));
+        return child.registerCell(cell);
+      }
+    };
+    return Level;
   })();
 }).call(this);

@@ -10,7 +10,7 @@
         options = {};
       }
       _this = this;
-      _ref = this.client.axisNames;
+      _ref = Wonkavision.AXIS_NAMES;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         axis = _ref[_i];
         _this[axis] = this.select(axis);
@@ -75,7 +75,7 @@
           return _results;
         }).call(this)).join(this.listDelimiter)
       };
-      _ref = this.client.axisNames;
+      _ref = Wonkavision.AXIS_NAMES;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         axisName = _ref[_i];
         if (this.getAxis(axisName)) {
@@ -94,13 +94,13 @@
       return this.client.execute(this, options);
     };
     Query.prototype.getAxis = function(axisName) {
-      return this.axes[this.client.axisNames.indexOf(axisName)];
+      return this.axes[Wonkavision.AXIS_NAMES.indexOf(axisName)];
     };
     Query.prototype.select = function(axis) {
       return __bind(function() {
         var dimensions, ordinal;
         dimensions = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-        ordinal = this.client.axisNames.indexOf(axis);
+        ordinal = Wonkavision.AXIS_NAMES.indexOf(axis);
         if (ordinal >= 0) {
           if (this.axes.length > ordinal) {
             dimensions = this.axes[ordinal].concat(dimensions);

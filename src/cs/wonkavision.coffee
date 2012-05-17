@@ -4,7 +4,6 @@ this.Wonkavision = class Wonkavision
       @url = options.url || ""
       @facts = {}
       @aggregations = {}
-      @axisNames = ["columns","rows","pages","chapters","sections"]
 
     query : (options = {}) ->
       new Wonkavision.Query(this, options)
@@ -24,3 +23,5 @@ this.Wonkavision = class Wonkavision
       uri = @url + if @url.substr(-1) == "/" then "" else "/"
       uri = @url + path
       Wonkavision.Remote.get(uri, data : params, success: success, error: error)
+
+this.Wonkavision.AXIS_NAMES = ["columns","rows","pages","chapters","sections"]

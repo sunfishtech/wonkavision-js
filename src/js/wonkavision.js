@@ -12,7 +12,6 @@
         this.url = options.url || "";
         this.facts = {};
         this.aggregations = {};
-        this.axisNames = ["columns", "rows", "pages", "chapters", "sections"];
       }
       Client.prototype.query = function(options) {
         if (options == null) {
@@ -46,4 +45,5 @@
     })();
     return Wonkavision;
   })();
+  this.Wonkavision.AXIS_NAMES = ["columns", "rows", "pages", "chapters", "sections"];
 }).call(this);

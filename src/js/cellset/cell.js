@@ -13,7 +13,6 @@
           measure = _ref[_i];
           this.addMeasure(measure);
         }
-        this.dimensions = data.dimensions;
         this.key = data.key;
       }
     }

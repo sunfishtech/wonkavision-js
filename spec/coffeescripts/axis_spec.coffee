@@ -2,6 +2,7 @@
 Cellset = this.Wonkavision.Cellset
 
 responseData = JSON.parse(this.test_data.wv_query_response)
+responseData2 = JSON.parse(this.test_data.wv_query_response2)
 
 describe "Axis", ->
   cellset = null
@@ -18,22 +19,16 @@ describe "Axis", ->
   it "should extract a list of dimension names", ->
     expect(axis.dimensionNames).toEqual ["context_date"]
 
-  describe "totals", ->
-    cell = null
+  
 
-    beforeEach ->
-      cell = axis.totals("2011-05-02")
-     
-    it "should locate a totals cell for the given coordinates", ->
-      expect(cell).not.toBeNull()
-      expect(cell.empty).not.toBeTruthy()
-    
-    it "should locate a cellw ith an abbreviated key matching just the axis coords", ->
-      expect(cell.key).toEqual ["2011-05-02"]
-    
-    it "should locate a cell with correctly specified dimensions", ->
-      expect(cell.totals.dimensions).toEqual ["context_date"]
-    
-    it "should aggregate all detail for the given summary cell", ->
-      expect(cell.totals.count.value).toEqual 1
+describe "Level", ->
+  cellset = null
+  axis = null
 
+  beforeEach ->
+    cellset = new Cellset(responseData2)
+    axis = cellset.axes[1]
+  
+  it "should register a level for each member of the root dimension", ->
+    console.log axis
+    expect(_.size(axis.levels)).toEqual(1)

@@ -14,16 +14,19 @@ this.Wonkavision.Cellset = class Cellset
     @totals = new Cell( this, data.totals )
     @measureNames = data.measure_names || []
     startIndex = 0
-    @axes = for axis in (data.axes || [])
-      a = new Axis(this, axis, startIndex)
+    @axes = for i in [0...data.axes.length]
+      axis = data.axes[i]
+      name = Wonkavision.AXIS_NAMES[i]
+      a = new Axis(name, this, axis, startIndex)
       startIndex = a.endIndex + 1; a
 
       
     @cells = {}
     for cell in (data.cells || [])
       @cells[cell.key] = new Cell(this, cell)
-    
-    for axis, index in ["columns","rows","pages","chapters","sections"]
+      axis.registerCell(cell) for axis in @axes
+
+    for axis, index in Wonkavision.AXIS_NAMES
       this[axis] = @axes[index]
   
   cell : () ->
