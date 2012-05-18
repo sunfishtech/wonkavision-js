@@ -454,9 +454,11 @@ OTHER DEALINGS IN THE SOFTWARE.
     };
     Axis.prototype.registerCell = function(cell) {
       var level, levelKey;
-      levelKey = cell.key.slice(this.startIndex, (this.startIndex + 1) || 9e9);
-      level = this.levels.get(levelKey);
-      return level.registerCell(cell);
+      if (!cell.empty) {
+        levelKey = cell.key.slice(this.startIndex, (this.startIndex + 1) || 9e9);
+        level = this.levels.get(levelKey);
+        return level.registerCell(cell);
+      }
     };
     return Axis;
   })();

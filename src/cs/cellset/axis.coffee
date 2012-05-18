@@ -25,9 +25,10 @@ this.Wonkavision.Axis = class Axis
         @initLevels(childKey, level)
 
   registerCell : (cell) ->
-    levelKey = cell.key[@startIndex..@startIndex]
-    level = @levels.get(levelKey)
-    level.registerCell(cell)
+    unless cell.empty
+      levelKey = cell.key[@startIndex..@startIndex]
+      level = @levels.get(levelKey)
+      level.registerCell(cell)
 
 #----- Level -----------------------
 this.Wonkavision.Level = class Level
