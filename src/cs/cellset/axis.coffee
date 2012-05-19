@@ -30,6 +30,9 @@ this.Wonkavision.Axis = class Axis
       level = @levels.get(levelKey)
       level.registerCell(cell)
 
+  appendMeasures : -> @levels.appendMeasures(@cellset)
+
+
 #----- Level -----------------------
 this.Wonkavision.Level = class Level
   constructor : (@key, @parent, @keyIndex, @member) ->
@@ -40,6 +43,7 @@ this.Wonkavision.Level = class Level
     @isEmpty = true
     @isLeaf = (@keyIndex == @axis.endIndex)
     @levels = new LevelCollection() unless @isLeaf
+    @cellKey = @key
 
   leaves : (nonEmpty = false) -> if @isLeaf then [this] else @levels.leaves(nonEmpty)
 
@@ -51,6 +55,20 @@ this.Wonkavision.Level = class Level
       child = @levels.get(childKey)
       child.registerCell(cell)
 
+#------Measure Level--------------------------------------------
+this.Wonkavision.MeasureLevel = class MeasureLevel extends Level
+  constructor : (@measureName, parentLevel) ->
+    @key = parentLevel.key.concat ["@#{measureName}"]
+    @parent = parentLevel
+    @axis = parentLevel.axis
+    @caption = measureName
+    @depth = parentLevel.depth + 1
+    @isEmpty = parentLevel.isEmpty
+    @isLeaf = true
+    parentLevel.isLeaf = false
+    @isMeasures = true
+    @cellKey = @key[0..-2]
+
 #----- Level Collection ----------------------------------
 this.Wonkavision.LevelCollection = class LevelCollection
   constructor : (levels = [], @isNonEmpty = false) ->
@@ -60,17 +78,72 @@ this.Wonkavision.LevelCollection = class LevelCollection
 
   get : (key) -> _.find @levels, (l) -> l.key.toString() == key.toString()
 
-  push : (level) -> @length += 1; @levels.push(level); level
+  push : (level) ->
+    @invalidateCache()
+    @length += 1
+    @levels.push(level)
+    level
 
   each : (callback) -> _.each(@levels, callback)
+
+  map : (callback) -> _.each(@levels, callback)
 
   nonEmpty : ->
     new LevelCollection( _.filter( @levels, (level) -> !level.isEmpty ), true )
 
-  leaves : (nonEmpty = @isNonEmpty) ->
-    levels = if nonEmpty then @nonEmpty().levels else @levels
-    _.flatten( _.map( levels, (level) -> level.leaves(nonEmpty) ))
+  leaves : (nonEmpty) ->
+    nonEmpty = @isNonEmpty unless nonEmpty?
+    unless @leafCache?
+      levels = if nonEmpty then @nonEmpty().levels else @levels
+      @leafCache = _.flatten( _.map( levels, (level) -> level.leaves(nonEmpty) ))
+    @leafCache
 
   at : (idx) -> @levels[idx]
 
   toArray : -> @levels
+
+  flatten : (nonEmpty, levels = []) ->
+    nonEmpty = @isNonEmpty unless nonEmpty?
+    @map (level) ->
+      unless nonEmpty and level.isEmpty
+        levels.push level
+        level.levels.flatten(nonEmpty, levels) unless level.isLeaf
+    levels
+
+  partitionH : (nonEmpty) ->
+    nonEmpty = @isNonEmpty unless nonEmpty?
+    levels = @flatten(nonEmpty)
+    reducer = (memo, level) ->
+      curpart = _.last memo
+      lastlevel = _.last(curpart)
+      unless lastlevel && lastlevel.depth >= level.depth
+        curpart.push level
+      else
+        memo.push [level]
+      memo
+
+    _.reduce levels, reducer, [[]]
+
+  partitionV : (nonEmpty) ->
+    nonEmpty = @isNonEmpty unless nonEmpty?
+    levels = @flatten(nonEmpty)
+    reducer = (memo, level) ->
+      group = (memo[level.depth] ||= [])
+      group.push level; memo
+
+    _.reduce levels, reducer, []
+
+  appendMeasures : (cellset) ->
+    measureNames = cellset.measureNames
+    prevLeaves = @leaves()
+    _.each prevLeaves, (pLeaf) ->
+      pLeaf.levels = new LevelCollection(
+        _.map measureNames, (mname) ->
+          new MeasureLevel(mname, pLeaf)
+      )
+    @invalidateCache(true)
+
+  invalidateCache : (recursive = false) ->
+    @leafCache = null
+    if recursive
+      @each (l) -> l.levels.invalidateCache() if l.levels?

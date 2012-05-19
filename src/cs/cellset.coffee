@@ -28,6 +28,9 @@ this.Wonkavision.Cellset = class Cellset
 
     for axis, index in Wonkavision.AXIS_NAMES
       this[axis] = @axes[index]
+
+    if @query? && @query.measureAxis != "none"
+      this[@query.measureAxis].appendMeasures()
   
   cell : () ->
     coords = if coord? then coord.toString() else coord for coord in arguments

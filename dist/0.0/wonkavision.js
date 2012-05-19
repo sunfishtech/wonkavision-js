@@ -247,6 +247,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.axes = [];
       this.filters = [];
       this.selectedMeasures = [];
+      this.measureAxis = "none";
       _ref2 = Wonkavision.AXIS_NAMES;
       for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
         axis = _ref2[_j];
@@ -269,6 +270,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       if (query.aggregation != null) {
         this.aggregation(query.aggregation);
       }
+      this.measuresOn(query.measuresOn || query.measuresRole || "none");
     }
     Query.prototype.cube = function(cubeName) {
       this.cubeName = cubeName;
@@ -291,6 +293,9 @@ OTHER DEALINGS IN THE SOFTWARE.
       measures = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
       this.selectedMeasures = this.selectedMeasures.concat(_.flatten(measures));
       return this;
+    };
+    Query.prototype.measuresOn = function(axisName) {
+      return this.measureAxis = axisName;
     };
     Query.prototype.where = function(criteria) {
       var filter, value;
@@ -399,8 +404,15 @@ OTHER DEALINGS IN THE SOFTWARE.
 }).call(this);
 
 (function() {
-  var Axis, Dimension, Level, LevelCollection;
-  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+  var Axis, Dimension, Level, LevelCollection, MeasureLevel;
+  var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+    for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
+    function ctor() { this.constructor = child; }
+    ctor.prototype = parent.prototype;
+    child.prototype = new ctor;
+    child.__super__ = parent.prototype;
+    return child;
+  }, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   Dimension = this.Wonkavision.Dimension;
   this.Wonkavision.Axis = Axis = (function() {
     function Axis(name, cellset, data, startIndex) {
@@ -460,6 +472,9 @@ OTHER DEALINGS IN THE SOFTWARE.
         return level.registerCell(cell);
       }
     };
+    Axis.prototype.appendMeasures = function() {
+      return this.levels.appendMeasures(this.cellset);
+    };
     return Axis;
   })();
   this.Wonkavision.Level = Level = (function() {
@@ -476,6 +491,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       if (!this.isLeaf) {
         this.levels = new LevelCollection();
       }
+      this.cellKey = this.key;
     }
     Level.prototype.leaves = function(nonEmpty) {
       if (nonEmpty == null) {
@@ -499,6 +515,23 @@ OTHER DEALINGS IN THE SOFTWARE.
     };
     return Level;
   })();
+  this.Wonkavision.MeasureLevel = MeasureLevel = (function() {
+    __extends(MeasureLevel, Level);
+    function MeasureLevel(measureName, parentLevel) {
+      this.measureName = measureName;
+      this.key = parentLevel.key.concat(["@" + measureName]);
+      this.parent = parentLevel;
+      this.axis = parentLevel.axis;
+      this.caption = measureName;
+      this.depth = parentLevel.depth + 1;
+      this.isEmpty = parentLevel.isEmpty;
+      this.isLeaf = true;
+      parentLevel.isLeaf = false;
+      this.isMeasures = true;
+      this.cellKey = this.key.slice(0, -1);
+    }
+    return MeasureLevel;
+  })();
   this.Wonkavision.LevelCollection = LevelCollection = (function() {
     function LevelCollection(levels, isNonEmpty) {
       if (levels == null) {
@@ -517,11 +550,15 @@ OTHER DEALINGS IN THE SOFTWARE.
       });
     };
     LevelCollection.prototype.push = function(level) {
+      this.invalidateCache();
       this.length += 1;
       this.levels.push(level);
       return level;
     };
     LevelCollection.prototype.each = function(callback) {
+      return _.each(this.levels, callback);
+    };
+    LevelCollection.prototype.map = function(callback) {
       return _.each(this.levels, callback);
     };
     LevelCollection.prototype.nonEmpty = function() {
@@ -534,16 +571,93 @@ OTHER DEALINGS IN THE SOFTWARE.
       if (nonEmpty == null) {
         nonEmpty = this.isNonEmpty;
       }
-      levels = nonEmpty ? this.nonEmpty().levels : this.levels;
-      return _.flatten(_.map(levels, function(level) {
-        return level.leaves(nonEmpty);
-      }));
+      if (this.leafCache == null) {
+        levels = nonEmpty ? this.nonEmpty().levels : this.levels;
+        this.leafCache = _.flatten(_.map(levels, function(level) {
+          return level.leaves(nonEmpty);
+        }));
+      }
+      return this.leafCache;
     };
     LevelCollection.prototype.at = function(idx) {
       return this.levels[idx];
     };
     LevelCollection.prototype.toArray = function() {
       return this.levels;
+    };
+    LevelCollection.prototype.flatten = function(nonEmpty, levels) {
+      if (levels == null) {
+        levels = [];
+      }
+      if (nonEmpty == null) {
+        nonEmpty = this.isNonEmpty;
+      }
+      this.map(function(level) {
+        if (!(nonEmpty && level.isEmpty)) {
+          levels.push(level);
+          if (!level.isLeaf) {
+            return level.levels.flatten(nonEmpty, levels);
+          }
+        }
+      });
+      return levels;
+    };
+    LevelCollection.prototype.partitionH = function(nonEmpty) {
+      var levels, reducer;
+      if (nonEmpty == null) {
+        nonEmpty = this.isNonEmpty;
+      }
+      levels = this.flatten(nonEmpty);
+      reducer = function(memo, level) {
+        var curpart, lastlevel;
+        curpart = _.last(memo);
+        lastlevel = _.last(curpart);
+        if (!(lastlevel && lastlevel.depth >= level.depth)) {
+          curpart.push(level);
+        } else {
+          memo.push([level]);
+        }
+        return memo;
+      };
+      return _.reduce(levels, reducer, [[]]);
+    };
+    LevelCollection.prototype.partitionV = function(nonEmpty) {
+      var levels, reducer;
+      if (nonEmpty == null) {
+        nonEmpty = this.isNonEmpty;
+      }
+      levels = this.flatten(nonEmpty);
+      reducer = function(memo, level) {
+        var group, _name;
+        group = (memo[_name = level.depth] || (memo[_name] = []));
+        group.push(level);
+        return memo;
+      };
+      return _.reduce(levels, reducer, []);
+    };
+    LevelCollection.prototype.appendMeasures = function(cellset) {
+      var measureNames, prevLeaves;
+      measureNames = cellset.measureNames;
+      prevLeaves = this.leaves();
+      _.each(prevLeaves, function(pLeaf) {
+        return pLeaf.levels = new LevelCollection(_.map(measureNames, function(mname) {
+          return new MeasureLevel(mname, pLeaf);
+        }));
+      });
+      return this.invalidateCache(true);
+    };
+    LevelCollection.prototype.invalidateCache = function(recursive) {
+      if (recursive == null) {
+        recursive = false;
+      }
+      this.leafCache = null;
+      if (recursive) {
+        return this.each(function(l) {
+          if (l.levels != null) {
+            return l.levels.invalidateCache();
+          }
+        });
+      }
     };
     return LevelCollection;
   })();
@@ -664,6 +778,9 @@ OTHER DEALINGS IN THE SOFTWARE.
       for (index = 0, _len3 = _ref3.length; index < _len3; index++) {
         axis = _ref3[index];
         this[axis] = this.axes[index];
+      }
+      if ((this.query != null) && this.query.measureAxis !== "none") {
+        this[this.query.measureAxis].appendMeasures();
       }
     }
     Cellset.prototype.cell = function() {

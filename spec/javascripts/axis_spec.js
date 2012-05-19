@@ -30,8 +30,6 @@
       return rows = cellset.axes[1];
     });
     it("should register a level for each member of the root dimension", function() {
-      console.log(rows);
-      console.log(columns);
       expect(columns.levels.length).toEqual(12);
       expect(columns.levels.at(0).member).toEqual(columns.dimensions[0].members[0]);
       expect(rows.levels.length).toEqual(1);
@@ -99,9 +97,38 @@
       it("should filter empty leaves", function() {
         return expect(columns.levels.leaves(true).length).toEqual(7);
       });
-      return it("should find leaves at a depth > 1", function() {
+      it("should find leaves at a depth > 1", function() {
         expect(rows.levels.leaves().length).toEqual(1);
         return expect(rows.levels.leaves()[0].caption).toEqual("2012-01-01");
+      });
+      it("should provide a depth first collection of all notes via allLevels", function() {
+        var allLevels;
+        allLevels = rows.levels.flatten();
+        expect(allLevels.length).toEqual(2);
+        expect(allLevels[0].caption).toEqual("30 day");
+        return expect(allLevels[1].caption).toEqual("2012-01-01");
+      });
+      it("should partition levels horizontally", function() {
+        var part;
+        part = rows.levels.partitionH();
+        expect(part.length).toEqual(1);
+        return expect(part[0].length).toEqual(2);
+      });
+      it("should partition levels, depth last", function() {
+        var part;
+        part = rows.levels.partitionV();
+        expect(part.length).toEqual(2);
+        expect(part[0].length).toEqual(1);
+        return expect(part[1].length).toEqual(1);
+      });
+      return it("should append measures using appendMeasures", function() {
+        var flat;
+        rows.appendMeasures();
+        flat = rows.levels.flatten();
+        expect(flat.length).toEqual(3);
+        expect(flat[2].caption).toEqual("30d_rate");
+        expect(flat[2].key).toEqual(["30 day", "2012-01-01", "@30d_rate"]);
+        return expect(flat[1].isLeaf).toEqual(false);
       });
     });
   });

@@ -19,6 +19,7 @@
       this.axes = [];
       this.filters = [];
       this.selectedMeasures = [];
+      this.measureAxis = "none";
       _ref2 = Wonkavision.AXIS_NAMES;
       for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
         axis = _ref2[_j];
@@ -41,6 +42,7 @@
       if (query.aggregation != null) {
         this.aggregation(query.aggregation);
       }
+      this.measuresOn(query.measuresOn || query.measuresRole || "none");
     }
     Query.prototype.cube = function(cubeName) {
       this.cubeName = cubeName;
@@ -63,6 +65,9 @@
       measures = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
       this.selectedMeasures = this.selectedMeasures.concat(_.flatten(measures));
       return this;
+    };
+    Query.prototype.measuresOn = function(axisName) {
+      return this.measureAxis = axisName;
     };
     Query.prototype.where = function(criteria) {
       var filter, value;

@@ -62,6 +62,9 @@
         axis = _ref3[index];
         this[axis] = this.axes[index];
       }
+      if ((this.query != null) && this.query.measureAxis !== "none") {
+        this[this.query.measureAxis].appendMeasures();
+      }
     }
     Cellset.prototype.cell = function() {
       var coord, coords;
