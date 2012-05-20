@@ -24,14 +24,10 @@ this.Wonkavision.Cellset = class Cellset
     @cells = {}
     for cell in (data.cells || [])
       @cells[cell.key] = new Cell(this, cell)
-      axis.registerCell(cell) for axis in @axes
 
     for axis, index in Wonkavision.AXIS_NAMES
       this[axis] = @axes[index]
 
-    if @query? && @query.measureAxis != "none"
-      this[@query.measureAxis].appendMeasures()
-  
   cell : () ->
     coords = if coord? then coord.toString() else coord for coord in arguments
     @cells[coords] || new Cell(this)

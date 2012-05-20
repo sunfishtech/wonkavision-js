@@ -1,7 +1,8 @@
 (function() {
   var Member;
   this.Wonkavision.Member = Member = (function() {
-    function Member(data) {
+    function Member(dimension, data) {
+      this.dimension = dimension;
       this.key = data.key;
       this.caption = data.caption || this.key;
       this.sort = data.sort || this.key;

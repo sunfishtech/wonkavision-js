@@ -5,7 +5,7 @@
   Filter = this.Wonkavision.Filter;
   this.Wonkavision.Cellset = Cellset = (function() {
     function Cellset(data, query) {
-      var a, axis, cell, f, filters, i, index, name, slicer, startIndex, _i, _j, _len, _len2, _len3, _ref, _ref2, _ref3;
+      var a, axis, cell, f, filters, i, index, name, slicer, startIndex, _i, _len, _len2, _ref, _ref2;
       if (data == null) {
         data = {};
       }
@@ -51,19 +51,11 @@
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         cell = _ref[_i];
         this.cells[cell.key] = new Cell(this, cell);
-        _ref2 = this.axes;
-        for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-          axis = _ref2[_j];
-          axis.registerCell(cell);
-        }
       }
-      _ref3 = Wonkavision.AXIS_NAMES;
-      for (index = 0, _len3 = _ref3.length; index < _len3; index++) {
-        axis = _ref3[index];
+      _ref2 = Wonkavision.AXIS_NAMES;
+      for (index = 0, _len2 = _ref2.length; index < _len2; index++) {
+        axis = _ref2[index];
         this[axis] = this.axes[index];
-      }
-      if ((this.query != null) && this.query.measureAxis !== "none") {
-        this[this.query.measureAxis].appendMeasures();
       }
     }
     Cellset.prototype.cell = function() {

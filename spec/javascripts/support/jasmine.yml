@@ -16,12 +16,12 @@ src_files:
     - src/js/remote.js
     - src/js/filter.js
     - src/js/query.js
+    - src/js/pivot_table.js
     - src/js/cellset/member.js
     - src/js/cellset/dimension.js
     - src/js/cellset/axis.js
     - src/js/cellset/measure.js
     - src/js/cellset/cell.js
-    - src/js/cellset/transformations.js
     - src/js/cellset.js
 
 

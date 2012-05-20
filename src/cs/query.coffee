@@ -10,7 +10,6 @@ this.Wonkavision.Query = class Query
     @axes = []
     @filters = []
     @selectedMeasures = []
-    @measureAxis = "none"
 
     for axis in Wonkavision.AXIS_NAMES
       this[axis](query[axis]) if query[axis]?
@@ -19,7 +18,6 @@ this.Wonkavision.Query = class Query
     @from(query.from) if query.from?
     @cube(query.cube) if query.cube?
     @aggregation(query.aggregation) if query.aggregation?
-    @measuresOn(query.measuresOn || query.measuresRole || "none")
 
 
   cube : (cubeName) -> @cubeName = cubeName; this
@@ -33,8 +31,6 @@ this.Wonkavision.Query = class Query
   measures : (measures...) ->
     @selectedMeasures = @selectedMeasures.concat(_.flatten(measures))
     this
-
-  measuresOn : (axisName) -> @measureAxis = axisName
 
   where : (criteria = {}) ->
     @filters = @filters.concat(
