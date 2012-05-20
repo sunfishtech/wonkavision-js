@@ -1,5 +1,7 @@
 this.Wonkavision.PivotTable = class PivotTable
   constructor : (@cellset, options = {}) ->
+    _.bindAll this, "cellValues", "cellValue"
+
     @axes = _.map @cellset.axes, (axis) =>
       this[axis.name] = new PivotTable.Axis(axis.name, axis.dimensions, this)
     @measuresAxis = options.measuresAxis || options.measuresOn || "columns"
@@ -20,20 +22,34 @@ this.Wonkavision.PivotTable = class PivotTable
     @rows = @columns
     @columns = r
 
+  cellValues : (rowMemberOrMembers) ->
+    rowMember = if _.isArray(rowMemberOrMembers) then _.last(rowMemberOrMembers) else rowMemberOrMembers
+    if @columns && !@columns.isEmpty
+      _.map @columns.members.nonEmpty().leaves(), (colMember) =>
+        @cellValue( rowMember, colMember )
+    else
+      [ @cellValue( rowMember ) ]
+
+  cellValue : (keyMembers...) ->
+    cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), (m) -> m.keyIndex), (m) -> m.cellKey()))
+    cell = @cellset.cells[cellKey]
+    if cell?
+      measureName = keyMembers[0].measureName || keyMembers[1]?.measureName || @cellset.measureNames[0]
+      cell[measureName].value
+
 this.Wonkavision.ChartTable = class ChartTable extends PivotTable
   constructor : (cellset, options = {}) ->
     @seriesSource = options.seriesSource || options.seriesFrom || 
       if cellset.measureNames.length > 1 then "measures" else "rows"
-    super(cellset, options)
-    
+    super(cellset, options)    
 
   initializeAxes : ->
-    console.debug
     @xAxisDimension = @columns.dimensions.pop()
     @seriesDimension = if @seriesSource != "measures" && this[@seriesSource]?
       this[@seriesSource].dimensions.pop()
     if @seriesSource == "measures" then @measuresAxis = null
     super()
+
 
 this.Wonkavision.PivotTable.Axis = class Axis
   constructor : (@name, @dimensions, @pivotTable) ->
@@ -97,6 +113,7 @@ this.Wonkavision.PivotTable.MeasureLevel = class MeasureLevel extends Member
     @isLeaf = true
     parentLevel.isLeaf = false
     @isMeasure = true
+    @keyIndex = parentLevel.keyIndex
   
   cellKey : -> @key[0..-2]
 

@@ -26,6 +26,11 @@ describe "Pivot Table", ->
   it "should register child members when there are multiple dimensions in an axis", ->
     expect(rows.members.at(0).members.length).toEqual(1)
 
+  it "should return a set of cell values for a row", ->
+    vals = pivot.cellValues(rows.members.at(0).members.at(0))
+    expect(vals.length).toEqual(7)
+    expect(vals[0]).not.toBeNull()
+
   describe "ChartTable", ->
 
     chart = null
@@ -41,7 +46,6 @@ describe "Pivot Table", ->
     it "should take the series dimension from the rows", ->
       expect(chart.seriesDimension.name).toEqual("date")
       expect(chart.rows.dimensions.length).toEqual(1)
-
 
   describe "Member", ->
 
@@ -126,3 +130,10 @@ describe "Pivot Table", ->
       expect(flat[2].caption).toEqual("30d_rate")
       expect(flat[2].key).toEqual(["30 day", "2012-01-01", "@30d_rate"])
       expect(flat[1].isLeaf).toEqual(false)
+
+    it "should retrieve cell values with appended measures", ->
+      rows.appendMeasures()
+      vals = pivot.cellValues(rows.members.at(0).members.at(0))
+      expect(vals.length).toEqual(7)
+      expect(vals[0]).not.toBeNull()
+

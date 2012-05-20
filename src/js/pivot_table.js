@@ -1,6 +1,6 @@
 (function() {
   var Axis, ChartTable, MeasureLevel, Member, MemberCollection, PivotTable;
-  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __slice = Array.prototype.slice, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
     for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
     function ctor() { this.constructor = child; }
     ctor.prototype = parent.prototype;
@@ -15,6 +15,7 @@
       if (options == null) {
         options = {};
       }
+      _.bindAll(this, "cellValues", "cellValue");
       this.axes = _.map(this.cellset.axes, __bind(function(axis) {
         return this[axis.name] = new PivotTable.Axis(axis.name, axis.dimensions, this);
       }, this));
@@ -54,6 +55,31 @@
       this.rows = this.columns;
       return this.columns = r;
     };
+    PivotTable.prototype.cellValues = function(rowMemberOrMembers) {
+      var rowMember;
+      rowMember = _.isArray(rowMemberOrMembers) ? _.last(rowMemberOrMembers) : rowMemberOrMembers;
+      if (this.columns && !this.columns.isEmpty) {
+        return _.map(this.columns.members.nonEmpty().leaves(), __bind(function(colMember) {
+          return this.cellValue(rowMember, colMember);
+        }, this));
+      } else {
+        return [this.cellValue(rowMember)];
+      }
+    };
+    PivotTable.prototype.cellValue = function() {
+      var cell, cellKey, keyMembers, measureName, _ref;
+      keyMembers = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), function(m) {
+        return m.keyIndex;
+      }), function(m) {
+        return m.cellKey();
+      }));
+      cell = this.cellset.cells[cellKey];
+      if (cell != null) {
+        measureName = keyMembers[0].measureName || ((_ref = keyMembers[1]) != null ? _ref.measureName : void 0) || this.cellset.measureNames[0];
+        return cell[measureName].value;
+      }
+    };
     return PivotTable;
   })();
   this.Wonkavision.ChartTable = ChartTable = (function() {
@@ -66,7 +92,6 @@
       ChartTable.__super__.constructor.call(this, cellset, options);
     }
     ChartTable.prototype.initializeAxes = function() {
-      console.debug;
       this.xAxisDimension = this.columns.dimensions.pop();
       this.seriesDimension = this.seriesSource !== "measures" && (this[this.seriesSource] != null) ? this[this.seriesSource].dimensions.pop() : void 0;
       if (this.seriesSource === "measures") {
@@ -178,6 +203,7 @@
       this.isLeaf = true;
       parentLevel.isLeaf = false;
       this.isMeasure = true;
+      this.keyIndex = parentLevel.keyIndex;
     }
     MeasureLevel.prototype.cellKey = function() {
       return this.key.slice(0, -1);

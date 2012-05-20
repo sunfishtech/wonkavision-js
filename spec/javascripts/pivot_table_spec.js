@@ -27,6 +27,12 @@
     it("should register child members when there are multiple dimensions in an axis", function() {
       return expect(rows.members.at(0).members.length).toEqual(1);
     });
+    it("should return a set of cell values for a row", function() {
+      var vals;
+      vals = pivot.cellValues(rows.members.at(0).members.at(0));
+      expect(vals.length).toEqual(7);
+      return expect(vals[0]).not.toBeNull();
+    });
     describe("ChartTable", function() {
       var chart;
       chart = null;
@@ -128,7 +134,7 @@
         expect(part[0].length).toEqual(1);
         return expect(part[1].length).toEqual(1);
       });
-      return it("should append measures using appendMeasures", function() {
+      it("should append measures using appendMeasures", function() {
         var flat;
         rows.appendMeasures();
         flat = rows.members.flatten();
@@ -136,6 +142,13 @@
         expect(flat[2].caption).toEqual("30d_rate");
         expect(flat[2].key).toEqual(["30 day", "2012-01-01", "@30d_rate"]);
         return expect(flat[1].isLeaf).toEqual(false);
+      });
+      return it("should retrieve cell values with appended measures", function() {
+        var vals;
+        rows.appendMeasures();
+        vals = pivot.cellValues(rows.members.at(0).members.at(0));
+        expect(vals.length).toEqual(7);
+        return expect(vals[0]).not.toBeNull();
       });
     });
   });
