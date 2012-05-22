@@ -61,7 +61,12 @@ describe "Pivot Table", ->
       beforeEach -> chart = new ChartTable(cellset, seriesSource : "measures")
       it "should provide an array of series (x,y) pairs", ->
         series = chart.cellValue(chart.rows.members.nonEmpty().leaves()[0])
-        console.log series
+        expect(series.length).toEqual 1
+        expect(series[0].name).toEqual "30d_rate"
+        expect(series[0].data.length).toEqual(12)
+        expect(series[0].data[0].x).toEqual "Air Angels"
+        expect(series[0].data[1].x).toBeDefined()
+        expect(series[0].data[1].x).not.toBeNull()
 
 
   describe "Member", ->

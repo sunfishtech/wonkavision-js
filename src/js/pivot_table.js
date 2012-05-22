@@ -17,7 +17,7 @@
       }
       _.bindAll(this, "cellValues", "cellValue");
       this.axes = _.map(this.cellset.axes, __bind(function(axis) {
-        return this[axis.name] = new PivotTable.Axis(axis.name, axis.dimensions, this);
+        return this[axis.name] = new PivotTable.Axis(axis.name, axis.dimensions.slice(0), this);
       }, this));
       this.measuresAxis = options.measuresAxis || options.measuresOn || "columns";
       this.initializeAxes();
@@ -128,8 +128,8 @@
       return _.map(this.xAxisDimension.members, __bind(function(x) {
         var key, pivotMember, xMember;
         xMember = Member.fromDimensionMember(x);
-        pivotMember = new MeasureMember(measureName, x);
-        key = keyMembers.concat([pivotMember, x]);
+        pivotMember = new MeasureMember(measureName, xMember);
+        key = keyMembers.concat([pivotMember]);
         return {
           x: x.key,
           y: this.extractValue.apply(this, key)

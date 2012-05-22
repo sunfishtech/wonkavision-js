@@ -3,7 +3,7 @@ this.Wonkavision.PivotTable = class PivotTable
     _.bindAll this, "cellValues", "cellValue"
 
     @axes = _.map @cellset.axes, (axis) =>
-      this[axis.name] = new PivotTable.Axis(axis.name, axis.dimensions, this)
+      this[axis.name] = new PivotTable.Axis(axis.name, axis.dimensions.slice(0), this)
     @measuresAxis = options.measuresAxis || options.measuresOn || "columns"
     @initializeAxes()
 
@@ -45,7 +45,7 @@ this.Wonkavision.ChartTable = class ChartTable extends PivotTable
     _.bindAll this, "cellValues", "cellValue"
     @seriesSource = options.seriesSource || options.seriesFrom || 
       if cellset.measureNames.length > 1 then "measures" else "rows"
-    super(cellset, options)    
+    super(cellset, options)   
 
   initializeAxes : ->
     @xAxisDimension = @columns.dimensions.pop()
@@ -67,8 +67,8 @@ this.Wonkavision.ChartTable = class ChartTable extends PivotTable
   seriesFromMeasure : (keyMembers, measureName) ->
     _.map @xAxisDimension.members, (x) =>
       xMember = Member.fromDimensionMember(x)
-      pivotMember = new MeasureMember(measureName, x)
-      key = keyMembers.concat [pivotMember, x]
+      pivotMember = new MeasureMember(measureName, xMember)
+      key = keyMembers.concat [pivotMember]
       x : x.key
       y : @extractValue(key...)
 
@@ -79,8 +79,6 @@ this.Wonkavision.ChartTable = class ChartTable extends PivotTable
       key = keyMembers.concat [pivotMember, xMember]
       x : x.key
       y : @extractValue(key...)
-
-
 
 #---Axis------------------------------------
 this.Wonkavision.PivotTable.Axis = class Axis

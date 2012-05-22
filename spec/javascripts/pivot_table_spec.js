@@ -71,7 +71,12 @@
         return it("should provide an array of series (x,y) pairs", function() {
           var series;
           series = chart.cellValue(chart.rows.members.nonEmpty().leaves()[0]);
-          return console.log(series);
+          expect(series.length).toEqual(1);
+          expect(series[0].name).toEqual("30d_rate");
+          expect(series[0].data.length).toEqual(12);
+          expect(series[0].data[0].x).toEqual("Air Angels");
+          expect(series[0].data[1].x).toBeDefined();
+          return expect(series[0].data[1].x).not.toBeNull();
         });
       });
     });
