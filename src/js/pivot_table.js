@@ -1,5 +1,5 @@
 (function() {
-  var Axis, ChartTable, MeasureLevel, Member, MemberCollection, PivotTable;
+  var Axis, ChartTable, MeasureMember, Member, MemberCollection, PivotTable;
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __slice = Array.prototype.slice, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
     for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
     function ctor() { this.constructor = child; }
@@ -67,6 +67,11 @@
       }
     };
     PivotTable.prototype.cellValue = function() {
+      var keyMembers;
+      keyMembers = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      return this.extractValue.apply(this, keyMembers);
+    };
+    PivotTable.prototype.extractValue = function() {
       var cell, cellKey, keyMembers, measureName, _ref;
       keyMembers = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
       cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), function(m) {
@@ -88,6 +93,7 @@
       if (options == null) {
         options = {};
       }
+      _.bindAll(this, "cellValues", "cellValue");
       this.seriesSource = options.seriesSource || options.seriesFrom || (cellset.measureNames.length > 1 ? "measures" : "rows");
       ChartTable.__super__.constructor.call(this, cellset, options);
     }
@@ -98,6 +104,50 @@
         this.measuresAxis = null;
       }
       return ChartTable.__super__.initializeAxes.call(this);
+    };
+    ChartTable.prototype.cellValue = function() {
+      var keyMembers;
+      keyMembers = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      if (this.seriesSource === "measures") {
+        return _.map(this.cellset.measureNames, __bind(function(measureName) {
+          return {
+            name: measureName,
+            data: this.seriesFromMeasure(keyMembers, measureName)
+          };
+        }, this));
+      } else if (this.seriesDimension != null) {
+        return _.map(this.seriesDimension.members, __bind(function(seriesMember) {
+          return {
+            name: seriesMember.caption,
+            data: this.seriesFromMember(keyMembers, seriesMember)
+          };
+        }, this));
+      }
+    };
+    ChartTable.prototype.seriesFromMeasure = function(keyMembers, measureName) {
+      return _.map(this.xAxisDimension.members, __bind(function(x) {
+        var key, pivotMember, xMember;
+        xMember = Member.fromDimensionMember(x);
+        pivotMember = new MeasureMember(measureName, x);
+        key = keyMembers.concat([pivotMember, x]);
+        return {
+          x: x.key,
+          y: this.extractValue.apply(this, key)
+        };
+      }, this));
+    };
+    ChartTable.prototype.seriesFromMember = function(keyMembers, member) {
+      var pivotMember;
+      pivotMember = Member.fromDimensionMember(member);
+      return _.map(this.xAxisDimension.members, __bind(function(x) {
+        var key, xMember;
+        xMember = Member.fromDimensionMember(x);
+        key = keyMembers.concat([pivotMember, xMember]);
+        return {
+          x: x.key,
+          y: this.extractValue.apply(this, key)
+        };
+      }, this));
     };
     return ChartTable;
   })();
@@ -152,15 +202,16 @@
   })();
   this.Wonkavision.PivotTable.Member = Member = (function() {
     function Member(key, parent, keyIndex, member) {
+      var _ref;
       this.key = key;
       this.parent = parent;
       this.keyIndex = keyIndex;
       this.member = member;
-      this.axis = this.parent.axis != null ? this.parent.axis : this.parent;
+      this.axis = ((_ref = this.parent) != null ? _ref.axis : void 0) != null ? this.parent.axis : this.parent;
       this.caption = this.member.caption;
-      this.depth = this.keyIndex - this.axis.startIndex;
+      this.depth = this.axis ? this.keyIndex - this.axis.startIndex : 0;
       this.isEmpty = true;
-      this.isLeaf = this.keyIndex === this.axis.endIndex;
+      this.isLeaf = this.axis ? this.keyIndex === this.axis.endIndex : 0;
       if (!this.isLeaf) {
         this.members = new MemberCollection();
       }
@@ -190,25 +241,28 @@
     };
     return Member;
   })();
-  this.Wonkavision.PivotTable.MeasureLevel = MeasureLevel = (function() {
-    __extends(MeasureLevel, Member);
-    function MeasureLevel(measureName, parentLevel) {
+  this.Wonkavision.PivotTable.Member.fromDimensionMember = function(member) {
+    return new Member([member.key], null, member.dimension.keyIndex, member);
+  };
+  this.Wonkavision.PivotTable.MeasureMember = MeasureMember = (function() {
+    __extends(MeasureMember, Member);
+    function MeasureMember(measureName, parentMember) {
       this.measureName = measureName;
-      this.key = parentLevel.key.concat(["@" + measureName]);
-      this.parent = parentLevel;
-      this.axis = parentLevel.axis;
+      this.key = parentMember.key.concat(["@" + measureName]);
+      this.parent = parentMember;
+      this.axis = parentMember.axis;
       this.caption = measureName;
-      this.depth = parentLevel.depth + 1;
-      this.isEmpty = parentLevel.isEmpty;
+      this.depth = parentMember.depth + 1;
+      this.isEmpty = parentMember.isEmpty;
       this.isLeaf = true;
-      parentLevel.isLeaf = false;
+      parentMember.isLeaf = false;
       this.isMeasure = true;
-      this.keyIndex = parentLevel.keyIndex;
+      this.keyIndex = parentMember.keyIndex;
     }
-    MeasureLevel.prototype.cellKey = function() {
+    MeasureMember.prototype.cellKey = function() {
       return this.key.slice(0, -1);
     };
-    return MeasureLevel;
+    return MeasureMember;
   })();
   this.Wonkavision.PivotTable.MemberCollection = MemberCollection = (function() {
     function MemberCollection(members, isNonEmpty) {
@@ -319,7 +373,7 @@
       prevLeaves = this.leaves();
       _.each(prevLeaves, function(pLeaf) {
         return pLeaf.members = new MemberCollection(_.map(measureNames, function(mname) {
-          return new MeasureLevel(mname, pLeaf);
+          return new MeasureMember(mname, pLeaf);
         }));
       });
       return this.invalidateCache(true);

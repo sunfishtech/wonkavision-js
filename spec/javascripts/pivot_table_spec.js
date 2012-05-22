@@ -46,9 +46,33 @@
         expect(chart.xAxisDimension.name).toEqual("customer");
         return expect(chart.columns.isEmpty).toEqual(true);
       });
-      return it("should take the series dimension from the rows", function() {
+      it("should take the series dimension from the rows", function() {
         expect(chart.seriesDimension.name).toEqual("date");
         return expect(chart.rows.dimensions.length).toEqual(1);
+      });
+      describe("cellValue", function() {
+        return it("should provide an array of series (x,y) pairs", function() {
+          var series;
+          series = chart.cellValue(chart.rows.members.nonEmpty().leaves()[0]);
+          expect(series.length).toEqual(1);
+          expect(series[0].name).toEqual("2012-01-01");
+          expect(series[0].data.length).toEqual(12);
+          expect(series[0].data[0].x).toEqual("Air Angels");
+          expect(series[0].data[1].x).toBeDefined();
+          return expect(series[0].data[1].x).not.toBeNull();
+        });
+      });
+      return describe("cellValue with dimension series", function() {
+        beforeEach(function() {
+          return chart = new ChartTable(cellset, {
+            seriesSource: "measures"
+          });
+        });
+        return it("should provide an array of series (x,y) pairs", function() {
+          var series;
+          series = chart.cellValue(chart.rows.members.nonEmpty().leaves()[0]);
+          return console.log(series);
+        });
       });
     });
     describe("Member", function() {

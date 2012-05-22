@@ -30,15 +30,19 @@ this.Wonkavision.PivotTable = class PivotTable
     else
       [ @cellValue( rowMember ) ]
 
-  cellValue : (keyMembers...) ->
+  cellValue : (keyMembers...) -> @extractValue(keyMembers...)
+    
+  extractValue : (keyMembers...) ->
     cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), (m) -> m.keyIndex), (m) -> m.cellKey()))
     cell = @cellset.cells[cellKey]
     if cell?
       measureName = keyMembers[0].measureName || keyMembers[1]?.measureName || @cellset.measureNames[0]
       cell[measureName].value
 
+#----ChartTable--------------------------------------------------
 this.Wonkavision.ChartTable = class ChartTable extends PivotTable
   constructor : (cellset, options = {}) ->
+    _.bindAll this, "cellValues", "cellValue"
     @seriesSource = options.seriesSource || options.seriesFrom || 
       if cellset.measureNames.length > 1 then "measures" else "rows"
     super(cellset, options)    
@@ -50,7 +54,35 @@ this.Wonkavision.ChartTable = class ChartTable extends PivotTable
     if @seriesSource == "measures" then @measuresAxis = null
     super()
 
+  cellValue : (keyMembers...) ->
+    if @seriesSource == "measures"
+      _.map @cellset.measureNames, (measureName) =>
+        name : measureName
+        data : @seriesFromMeasure keyMembers, measureName
+    else if @seriesDimension?
+      _.map @seriesDimension.members, (seriesMember) =>
+        name : seriesMember.caption
+        data : @seriesFromMember keyMembers, seriesMember        
 
+  seriesFromMeasure : (keyMembers, measureName) ->
+    _.map @xAxisDimension.members, (x) =>
+      xMember = Member.fromDimensionMember(x)
+      pivotMember = new MeasureMember(measureName, x)
+      key = keyMembers.concat [pivotMember, x]
+      x : x.key
+      y : @extractValue(key...)
+
+  seriesFromMember : (keyMembers, member) ->
+    pivotMember = Member.fromDimensionMember(member)
+    _.map @xAxisDimension.members, (x) =>
+      xMember = Member.fromDimensionMember(x)
+      key = keyMembers.concat [pivotMember, xMember]
+      x : x.key
+      y : @extractValue(key...)
+
+
+
+#---Axis------------------------------------
 this.Wonkavision.PivotTable.Axis = class Axis
   constructor : (@name, @dimensions, @pivotTable) ->
     @members = new MemberCollection()
@@ -81,12 +113,12 @@ this.Wonkavision.PivotTable.Axis = class Axis
 #----- Member -----------------------
 this.Wonkavision.PivotTable.Member = class Member
   constructor : (@key, @parent, @keyIndex, @member) ->
-    @axis = if @parent.axis? then @parent.axis else @parent
+    @axis = if @parent?.axis? then @parent.axis else @parent
     @caption = @member.caption
-    @depth = @keyIndex - @axis.startIndex
+    @depth = if @axis then @keyIndex - @axis.startIndex else 0
 
     @isEmpty = true
-    @isLeaf = (@keyIndex == @axis.endIndex)
+    @isLeaf = if @axis then (@keyIndex == @axis.endIndex) else 0
     @members = new MemberCollection() unless @isLeaf
 
   cellKey : -> @key
@@ -101,19 +133,22 @@ this.Wonkavision.PivotTable.Member = class Member
       child = @members.get(childKey)
       child.registerCell(cell)
 
+this.Wonkavision.PivotTable.Member.fromDimensionMember = (member) ->
+  new Member([member.key], null, member.dimension.keyIndex, member)
+
 #------Measure Member--------------------------------------------
-this.Wonkavision.PivotTable.MeasureLevel = class MeasureLevel extends Member
-  constructor : (@measureName, parentLevel) ->
-    @key = parentLevel.key.concat ["@#{measureName}"]
-    @parent = parentLevel
-    @axis = parentLevel.axis
+this.Wonkavision.PivotTable.MeasureMember = class MeasureMember extends Member
+  constructor : (@measureName, parentMember) ->
+    @key = parentMember.key.concat ["@#{measureName}"]
+    @parent = parentMember
+    @axis = parentMember.axis
     @caption = measureName
-    @depth = parentLevel.depth + 1
-    @isEmpty = parentLevel.isEmpty
+    @depth = parentMember.depth + 1
+    @isEmpty = parentMember.isEmpty
     @isLeaf = true
-    parentLevel.isLeaf = false
+    parentMember.isLeaf = false
     @isMeasure = true
-    @keyIndex = parentLevel.keyIndex
+    @keyIndex = parentMember.keyIndex
   
   cellKey : -> @key[0..-2]
 
@@ -187,7 +222,7 @@ this.Wonkavision.PivotTable.MemberCollection = class MemberCollection
     _.each prevLeaves, (pLeaf) ->
       pLeaf.members = new MemberCollection(
         _.map measureNames, (mname) ->
-          new MeasureLevel(mname, pLeaf)
+          new MeasureMember(mname, pLeaf)
       )
     @invalidateCache(true)
 

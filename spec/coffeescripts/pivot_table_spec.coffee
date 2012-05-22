@@ -47,8 +47,24 @@ describe "Pivot Table", ->
       expect(chart.seriesDimension.name).toEqual("date")
       expect(chart.rows.dimensions.length).toEqual(1)
 
-  describe "Member", ->
+    describe "cellValue", ->
+      it "should provide an array of series (x,y) pairs", ->
+        series = chart.cellValue(chart.rows.members.nonEmpty().leaves()[0])
+        expect(series.length).toEqual 1
+        expect(series[0].name).toEqual "2012-01-01"
+        expect(series[0].data.length).toEqual(12)
+        expect(series[0].data[0].x).toEqual "Air Angels"
+        expect(series[0].data[1].x).toBeDefined()
+        expect(series[0].data[1].x).not.toBeNull()
 
+    describe "cellValue with dimension series", ->
+      beforeEach -> chart = new ChartTable(cellset, seriesSource : "measures")
+      it "should provide an array of series (x,y) pairs", ->
+        series = chart.cellValue(chart.rows.members.nonEmpty().leaves()[0])
+        console.log series
+
+
+  describe "Member", ->
     it "should initialize its axis from its parent", ->
       expect(rows.members.at(0).axis.name).toEqual("rows")
       expect(rows.members.at(0).members.at(0).axis.name).toEqual("rows")
