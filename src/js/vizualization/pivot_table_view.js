@@ -10,6 +10,11 @@
       this.element = (typeof options.element === "function" ? options.element(d3.select(options.element)) : void 0) ? void 0 : d3.select("body");
       this.data = options.data;
     }
+    PivotTableView.prototype.colorFor = function(seriesName) {
+      var _base;
+      this.colorCache || (this.colorCache = {});
+      return (_base = this.colorCache)[seriesName] || (_base[seriesName] = this.palette.color());
+    };
     PivotTableView.prototype.render = function(args) {
       if (args.data != null) {
         this.data = args.data;
@@ -37,7 +42,7 @@
       colMembers = this.columns.partitionV();
       thead = tableSelection.append("thead");
       chr = thead.selectAll("tr.wv-col").data(colMembers).enter().append("tr").attr("class", "wv-col");
-      fillSpan = this.pivot.rows.dimensions.length + (this.pivot.measureAxis === "rows" ? 1 : 0);
+      fillSpan = this.pivot.rows.dimensions.length + (this.pivot.measuresAxis === "rows" ? 1 : 0);
       chr.append("th").attr("colspan", fillSpan);
       return ch = chr.selectAll("td.wv-col-header").data((function(d) {
         return d;
@@ -71,7 +76,7 @@
     PivotTableView.prototype.renderGraph = function(data, idx, cell) {
       var chart, container, graph, hoverDetail, x_axis, yAxis, y_axis;
       _.map(data, __bind(function(series) {
-        series.color = this.palette.color();
+        series.color = this.colorFor(series.name);
         return _.map(series.data, __bind(function(point) {
           point.x = moment(point.x).unix();
           return point.y = point.y || 0;

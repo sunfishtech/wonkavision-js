@@ -30,14 +30,17 @@ this.Wonkavision.PivotTable = class PivotTable
     else
       [ @cellValue( rowMember ) ]
 
-  cellValue : (keyMembers...) -> @extractValue(keyMembers...)
+  cellValue : (keyMembers...) -> @extractValue(keyMembers)
     
-  extractValue : (keyMembers...) ->
+  extractValue : (keyMembers, measureName) ->
     cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), (m) -> m.keyIndex), (m) -> m.cellKey()))
     cell = @cellset.cells[cellKey]
     if cell?
-      measureName = keyMembers[0].measureName || keyMembers[1]?.measureName || @cellset.measureNames[0]
+      measureName = measureName || @findMeasureName(keyMembers) || @cellset.measureNames[0]
       cell[measureName].value
+
+  findMeasureName : (keyMembers) ->
+    _.find( keyMembers, (m) -> m.measureName? )?.measureName
 
 #----ChartTable--------------------------------------------------
 this.Wonkavision.ChartTable = class ChartTable extends PivotTable
@@ -70,7 +73,7 @@ this.Wonkavision.ChartTable = class ChartTable extends PivotTable
       pivotMember = new MeasureMember(measureName, xMember)
       key = keyMembers.concat [pivotMember]
       x : x.key
-      y : @extractValue(key...)
+      y : @extractValue(key, measureName)
 
   seriesFromMember : (keyMembers, member) ->
     pivotMember = Member.fromDimensionMember(member)
@@ -78,7 +81,7 @@ this.Wonkavision.ChartTable = class ChartTable extends PivotTable
       xMember = Member.fromDimensionMember(x)
       key = keyMembers.concat [pivotMember, xMember]
       x : x.key
-      y : @extractValue(key...)
+      y : @extractValue(key)
 
 #---Axis------------------------------------
 this.Wonkavision.PivotTable.Axis = class Axis

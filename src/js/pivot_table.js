@@ -69,11 +69,10 @@
     PivotTable.prototype.cellValue = function() {
       var keyMembers;
       keyMembers = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      return this.extractValue.apply(this, keyMembers);
+      return this.extractValue(keyMembers);
     };
-    PivotTable.prototype.extractValue = function() {
-      var cell, cellKey, keyMembers, measureName, _ref;
-      keyMembers = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    PivotTable.prototype.extractValue = function(keyMembers, measureName) {
+      var cell, cellKey;
       cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), function(m) {
         return m.keyIndex;
       }), function(m) {
@@ -81,9 +80,15 @@
       }));
       cell = this.cellset.cells[cellKey];
       if (cell != null) {
-        measureName = keyMembers[0].measureName || ((_ref = keyMembers[1]) != null ? _ref.measureName : void 0) || this.cellset.measureNames[0];
+        measureName = measureName || this.findMeasureName(keyMembers) || this.cellset.measureNames[0];
         return cell[measureName].value;
       }
+    };
+    PivotTable.prototype.findMeasureName = function(keyMembers) {
+      var _ref;
+      return (_ref = _.find(keyMembers, function(m) {
+        return m.measureName != null;
+      })) != null ? _ref.measureName : void 0;
     };
     return PivotTable;
   })();
@@ -132,7 +137,7 @@
         key = keyMembers.concat([pivotMember]);
         return {
           x: x.key,
-          y: this.extractValue.apply(this, key)
+          y: this.extractValue(key, measureName)
         };
       }, this));
     };
@@ -145,7 +150,7 @@
         key = keyMembers.concat([pivotMember, xMember]);
         return {
           x: x.key,
-          y: this.extractValue.apply(this, key)
+          y: this.extractValue(key)
         };
       }, this));
     };

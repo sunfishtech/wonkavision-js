@@ -5,6 +5,10 @@ this.Wonkavision.PivotTableView = class PivotTableView
     @element = if options.element? d3.select(options.element) else d3.select("body")
     @data = options.data
 
+  colorFor : (seriesName) ->
+    @colorCache ||= {}
+    @colorCache[seriesName] ||= @palette.color()
+
   render : (args) ->
     @data = args.data if args.data?
     @viewType = args.viewType || args.view || @detectViewType(args)
@@ -12,6 +16,7 @@ this.Wonkavision.PivotTableView = class PivotTableView
       new Wonkavision.PivotTable(@data, args)
     else
       new Wonkavision.ChartTable(@data, args)
+
     @rows = @pivot.rows.members.nonEmpty()
     @columns = @pivot.columns.members.nonEmpty()
     @format = d3.format(args.cellFormat || ",.1f")
@@ -34,7 +39,7 @@ this.Wonkavision.PivotTableView = class PivotTableView
       .enter()
       .append("tr").attr("class", "wv-col")
 
-    fillSpan = @pivot.rows.dimensions.length + if @pivot.measureAxis == "rows" then 1 else 0
+    fillSpan = @pivot.rows.dimensions.length + if @pivot.measuresAxis == "rows" then 1 else 0
     chr.append("th").attr("colspan", fillSpan)
     ch = chr.selectAll("td.wv-col-header")
       .data(((d) -> d), (d) -> d.key.toString())
@@ -68,7 +73,7 @@ this.Wonkavision.PivotTableView = class PivotTableView
 
   renderGraph : (data, idx, cell) ->
     _.map data, (series) =>
-      series.color = @palette.color()
+      series.color = @colorFor(series.name)
       _.map series.data, (point) =>
         point.x = moment(point.x).unix()
         point.y = point.y || 0

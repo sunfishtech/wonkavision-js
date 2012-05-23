@@ -433,11 +433,10 @@ OTHER DEALINGS IN THE SOFTWARE.
     PivotTable.prototype.cellValue = function() {
       var keyMembers;
       keyMembers = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      return this.extractValue.apply(this, keyMembers);
+      return this.extractValue(keyMembers);
     };
-    PivotTable.prototype.extractValue = function() {
-      var cell, cellKey, keyMembers, measureName, _ref;
-      keyMembers = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    PivotTable.prototype.extractValue = function(keyMembers, measureName) {
+      var cell, cellKey;
       cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), function(m) {
         return m.keyIndex;
       }), function(m) {
@@ -445,9 +444,15 @@ OTHER DEALINGS IN THE SOFTWARE.
       }));
       cell = this.cellset.cells[cellKey];
       if (cell != null) {
-        measureName = keyMembers[0].measureName || ((_ref = keyMembers[1]) != null ? _ref.measureName : void 0) || this.cellset.measureNames[0];
+        measureName = measureName || this.findMeasureName(keyMembers) || this.cellset.measureNames[0];
         return cell[measureName].value;
       }
+    };
+    PivotTable.prototype.findMeasureName = function(keyMembers) {
+      var _ref;
+      return (_ref = _.find(keyMembers, function(m) {
+        return m.measureName != null;
+      })) != null ? _ref.measureName : void 0;
     };
     return PivotTable;
   })();
@@ -496,7 +501,7 @@ OTHER DEALINGS IN THE SOFTWARE.
         key = keyMembers.concat([pivotMember]);
         return {
           x: x.key,
-          y: this.extractValue.apply(this, key)
+          y: this.extractValue(key, measureName)
         };
       }, this));
     };
@@ -509,7 +514,7 @@ OTHER DEALINGS IN THE SOFTWARE.
         key = keyMembers.concat([pivotMember, xMember]);
         return {
           x: x.key,
-          y: this.extractValue.apply(this, key)
+          y: this.extractValue(key)
         };
       }, this));
     };
@@ -972,6 +977,11 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.element = (typeof options.element === "function" ? options.element(d3.select(options.element)) : void 0) ? void 0 : d3.select("body");
       this.data = options.data;
     }
+    PivotTableView.prototype.colorFor = function(seriesName) {
+      var _base;
+      this.colorCache || (this.colorCache = {});
+      return (_base = this.colorCache)[seriesName] || (_base[seriesName] = this.palette.color());
+    };
     PivotTableView.prototype.render = function(args) {
       if (args.data != null) {
         this.data = args.data;
@@ -999,7 +1009,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       colMembers = this.columns.partitionV();
       thead = tableSelection.append("thead");
       chr = thead.selectAll("tr.wv-col").data(colMembers).enter().append("tr").attr("class", "wv-col");
-      fillSpan = this.pivot.rows.dimensions.length + (this.pivot.measureAxis === "rows" ? 1 : 0);
+      fillSpan = this.pivot.rows.dimensions.length + (this.pivot.measuresAxis === "rows" ? 1 : 0);
       chr.append("th").attr("colspan", fillSpan);
       return ch = chr.selectAll("td.wv-col-header").data((function(d) {
         return d;
@@ -1033,7 +1043,7 @@ OTHER DEALINGS IN THE SOFTWARE.
     PivotTableView.prototype.renderGraph = function(data, idx, cell) {
       var chart, container, graph, hoverDetail, x_axis, yAxis, y_axis;
       _.map(data, __bind(function(series) {
-        series.color = this.palette.color();
+        series.color = this.colorFor(series.name);
         return _.map(series.data, __bind(function(point) {
           point.x = moment(point.x).unix();
           return point.y = point.y || 0;
