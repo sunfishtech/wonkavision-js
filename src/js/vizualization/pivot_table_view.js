@@ -69,9 +69,20 @@
         return this.memberSpan(d);
       }, this)).attr("class", "wv-row-header");
       self = this;
-      return cell = rhr.selectAll("td.wv-cell").data(this.pivot.cellValues).enter().append("td").attr("class", "wv-cell").each(function(data, idx) {
-        return self.renderGraph(data, idx, this);
-      });
+      cell = rhr.selectAll("td.wv-cell").data(this.pivot.cellValues).enter().append("td").attr("class", "wv-cell");
+      if (this.viewType === "text") {
+        return cell.text(function(d) {
+          if (d != null) {
+            return self.format(d);
+          } else {
+            return "-";
+          }
+        });
+      } else {
+        return cell.each(function(data, idx) {
+          return self.renderGraph(data, idx, this);
+        });
+      }
     };
     PivotTableView.prototype.renderGraph = function(data, idx, cell) {
       var chart, container, graph, hoverDetail, x_axis, yAxis, y_axis;

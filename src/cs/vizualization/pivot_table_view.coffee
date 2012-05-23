@@ -67,9 +67,12 @@ this.Wonkavision.PivotTableView = class PivotTableView
     cell = rhr.selectAll("td.wv-cell")
       .data(@pivot.cellValues)
       .enter().append("td")
-      #.text((d) -> if d? then format(d) else "-")
       .attr("class","wv-cell")
-      .each((data, idx) -> self.renderGraph(data, idx, this))
+
+    if @viewType == "text"
+      cell.text((d) -> if d? then self.format(d) else "-")
+    else
+      cell.each((data, idx) -> self.renderGraph(data, idx, this))
 
   renderGraph : (data, idx, cell) ->
     _.map data, (series) =>
