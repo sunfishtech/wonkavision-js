@@ -23,6 +23,7 @@ src_files:
     - src/js/cellset/measure.js
     - src/js/cellset/cell.js
     - src/js/cellset.js
+    - src/js/vizualization/pivot_table_view.js
 
 
 

@@ -27,6 +27,7 @@ bundle 'wonkavision.js' do
   file 'cellset/measure.js'
   file 'cellset/cell.js'
   file 'cellset.js'
+  file 'vizualization/pivot_table_view.js'
 end
 
 # Optional post-bundling filter, for example for string substitution
