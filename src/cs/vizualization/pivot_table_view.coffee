@@ -2,8 +2,10 @@ this.Wonkavision.PivotTableView = class PivotTableView
   constructor : (options) ->
     _.bindAll this, "render", "renderTable", "renderColumnHeaders", "renderTableData"
     @palette = new Rickshaw.Color.Palette scheme : options.palette || 'munin'
-    @element = if options.element? d3.select(options.element) else d3.select("body")
+    @element = d3.selectAll(options.element) 
     @data = options.data
+
+    @extractGraphArgs(options)
 
   colorFor : (seriesName) ->
     @colorCache ||= {}
@@ -17,12 +19,27 @@ this.Wonkavision.PivotTableView = class PivotTableView
     else
       new Wonkavision.ChartTable(@data, args)
 
+    @extractGraphArgs(args)
     @rows = @pivot.rows.members.nonEmpty()
     @columns = @pivot.columns.members.nonEmpty()
     @format = d3.format(args.cellFormat || ",.1f")
 
-    @element.append("table").call(@renderTable)
+    @element.append("table").attr("class","wv-pivot-table").call(@renderTable)
 
+  extractGraphArgs : (args) ->
+    @graphArgs = _.defaults args.graph || {},
+      width:300
+      height:300
+      renderer: 'line'
+
+    @xAxisArgs = args.xAxis || {}
+
+    @yAxisArgs = _.defaults args.yAxis || {},
+      orientation : 'left'
+      tickFormat : Rickshaw.Fixtures.Number.formatKMBT
+
+    @hoverArgs = args.hover || {}
+  
   memberSpan : (member) -> member.members?.nonEmpty().leaves().length
     
   renderTable : (tableSelection) ->
@@ -91,23 +108,27 @@ this.Wonkavision.PivotTableView = class PivotTableView
     yAxis = container.append("div")
       .attr("class", "wv-y-axis")
 
-    graph = new Rickshaw.Graph
-      element : chart[0][0]
-      width : 300
-      height : 300
-      series : data
-      renderer : 'line'
+    graph = new Rickshaw.Graph(
+      _.extend @graphArgs, {
+        element : chart[0][0]
+        series : data
+      }
+    )      
 
-    x_axis = new Rickshaw.Graph.Axis.Time graph : graph
-    y_axis = new Rickshaw.Graph.Axis.Y
-      graph : graph
-      orientation : 'left'
-      tickFormat : Rickshaw.Fixtures.Number.formatKMBT
-      element : yAxis[0][0]
-      ticks : 5
+    x_axis = new Rickshaw.Graph.Axis.Time(
+      _.extend @xAxisArgs, graph : graph
+    ) 
 
-    hoverDetail = new Rickshaw.Graph.HoverDetail
-      graph : graph
+    y_axis = new Rickshaw.Graph.Axis.Y(
+      _.extend @yAxisArgs, {
+        graph : graph
+        element : yAxis[0][0]
+      }
+    )
+
+    hoverDetail = new Rickshaw.Graph.HoverDetail(
+      _.extend @hoverArgs, graph : graph
+    )
 
     graph.render()
 

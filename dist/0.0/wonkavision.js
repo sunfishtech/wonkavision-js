@@ -974,8 +974,9 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.palette = new Rickshaw.Color.Palette({
         scheme: options.palette || 'munin'
       });
-      this.element = (typeof options.element === "function" ? options.element(d3.select(options.element)) : void 0) ? void 0 : d3.select("body");
+      this.element = d3.selectAll(options.element);
       this.data = options.data;
+      this.extractGraphArgs(options);
     }
     PivotTableView.prototype.colorFor = function(seriesName) {
       var _base;
@@ -988,10 +989,24 @@ OTHER DEALINGS IN THE SOFTWARE.
       }
       this.viewType = args.viewType || args.view || this.detectViewType(args);
       this.pivot = this.viewType === "text" ? new Wonkavision.PivotTable(this.data, args) : new Wonkavision.ChartTable(this.data, args);
+      this.extractGraphArgs(args);
       this.rows = this.pivot.rows.members.nonEmpty();
       this.columns = this.pivot.columns.members.nonEmpty();
       this.format = d3.format(args.cellFormat || ",.1f");
-      return this.element.append("table").call(this.renderTable);
+      return this.element.append("table").attr("class", "wv-pivot-table").call(this.renderTable);
+    };
+    PivotTableView.prototype.extractGraphArgs = function(args) {
+      this.graphArgs = _.defaults(args.graph || {}, {
+        width: 300,
+        height: 300,
+        renderer: 'line'
+      });
+      this.xAxisArgs = args.xAxis || {};
+      this.yAxisArgs = _.defaults(args.yAxis || {}, {
+        orientation: 'left',
+        tickFormat: Rickshaw.Fixtures.Number.formatKMBT
+      });
+      return this.hoverArgs = args.hover || {};
     };
     PivotTableView.prototype.memberSpan = function(member) {
       var _ref;
@@ -1063,26 +1078,20 @@ OTHER DEALINGS IN THE SOFTWARE.
       container = d3.select(cell).append("div").attr("class", "wv-chart-container");
       chart = container.append("div").attr("class", "wv-chart");
       yAxis = container.append("div").attr("class", "wv-y-axis");
-      graph = new Rickshaw.Graph({
+      graph = new Rickshaw.Graph(_.extend(this.graphArgs, {
         element: chart[0][0],
-        width: 300,
-        height: 300,
-        series: data,
-        renderer: 'line'
-      });
-      x_axis = new Rickshaw.Graph.Axis.Time({
+        series: data
+      }));
+      x_axis = new Rickshaw.Graph.Axis.Time(_.extend(this.xAxisArgs, {
         graph: graph
-      });
-      y_axis = new Rickshaw.Graph.Axis.Y({
+      }));
+      y_axis = new Rickshaw.Graph.Axis.Y(_.extend(this.yAxisArgs, {
         graph: graph,
-        orientation: 'left',
-        tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
-        element: yAxis[0][0],
-        ticks: 5
-      });
-      hoverDetail = new Rickshaw.Graph.HoverDetail({
+        element: yAxis[0][0]
+      }));
+      hoverDetail = new Rickshaw.Graph.HoverDetail(_.extend(this.hoverArgs, {
         graph: graph
-      });
+      }));
       return graph.render();
     };
     PivotTableView.prototype.detectViewType = function(args) {
