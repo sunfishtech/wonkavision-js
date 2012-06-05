@@ -4,12 +4,7 @@
   this.Wonkavision.PivotTableView = PivotTableView = (function() {
     function PivotTableView(options) {
       _.bindAll(this, "render", "renderTable", "renderColumnHeaders", "renderTableData");
-      this.palette = new Rickshaw.Color.Palette({
-        scheme: options.palette || 'munin'
-      });
-      this.element = d3.selectAll(options.element);
-      this.data = options.data;
-      this.extractGraphArgs(options);
+      this.extractArgs(options);
     }
     PivotTableView.prototype.colorFor = function(seriesName) {
       var _base;
@@ -17,18 +12,25 @@
       return (_base = this.colorCache)[seriesName] || (_base[seriesName] = this.palette.color());
     };
     PivotTableView.prototype.render = function(args) {
-      if (args.data != null) {
-        this.data = args.data;
-      }
-      this.viewType = args.viewType || args.view || this.detectViewType(args);
+      this.extractArgs(args);
       this.pivot = this.viewType === "text" ? new Wonkavision.PivotTable(this.data, args) : new Wonkavision.ChartTable(this.data, args);
-      this.extractGraphArgs(args);
+      this.palette = new Rickshaw.Color.Palette({
+        scheme: this.colorScheme
+      });
       this.rows = this.pivot.rows.members.nonEmpty();
       this.columns = this.pivot.columns.members.nonEmpty();
-      this.format = d3.format(args.cellFormat || ",.1f");
+      this.format = d3.format(this.cellFormat);
       return this.element.append("table").attr("class", "wv-pivot-table").call(this.renderTable);
     };
-    PivotTableView.prototype.extractGraphArgs = function(args) {
+    PivotTableView.prototype.extractArgs = function(args) {
+      this.cellFormat = args.cellFormat || this.cellFormat || ",.1f";
+      if (args.data) {
+        this.data = args.data;
+      }
+      if (args.element) {
+        this.element = d3.selectAll(args.element);
+      }
+      this.colorScheme = args.palette || args.colorScheme || this.colorScheme || "munin";
       this.graphArgs = _.defaults(args.graph || {}, {
         width: 300,
         height: 300,
@@ -39,7 +41,8 @@
         orientation: 'left',
         tickFormat: Rickshaw.Fixtures.Number.formatKMBT
       });
-      return this.hoverArgs = args.hover || {};
+      this.hoverArgs = args.hover || {};
+      return this.viewType = args.viewType || args.view || this.detectViewType(args);
     };
     PivotTableView.prototype.memberSpan = function(member) {
       var _ref;

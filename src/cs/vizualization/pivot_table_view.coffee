@@ -1,32 +1,32 @@
 this.Wonkavision.PivotTableView = class PivotTableView
   constructor : (options) ->
     _.bindAll this, "render", "renderTable", "renderColumnHeaders", "renderTableData"
-    @palette = new Rickshaw.Color.Palette scheme : options.palette || 'munin'
-    @element = d3.selectAll(options.element) 
-    @data = options.data
-
-    @extractGraphArgs(options)
+    @extractArgs(options)
 
   colorFor : (seriesName) ->
     @colorCache ||= {}
     @colorCache[seriesName] ||= @palette.color()
 
   render : (args) ->
-    @data = args.data if args.data?
-    @viewType = args.viewType || args.view || @detectViewType(args)
+    @extractArgs(args)
+    
     @pivot = if @viewType == "text"
       new Wonkavision.PivotTable(@data, args)
     else
       new Wonkavision.ChartTable(@data, args)
 
-    @extractGraphArgs(args)
+    @palette = new Rickshaw.Color.Palette scheme : @colorScheme
     @rows = @pivot.rows.members.nonEmpty()
     @columns = @pivot.columns.members.nonEmpty()
-    @format = d3.format(args.cellFormat || ",.1f")
+    @format = d3.format(@cellFormat)
 
     @element.append("table").attr("class","wv-pivot-table").call(@renderTable)
 
-  extractGraphArgs : (args) ->
+  extractArgs : (args) ->
+    @cellFormat = args.cellFormat || @cellFormat || ",.1f"
+    @data = args.data if args.data
+    @element = d3.selectAll(args.element) if args.element
+    @colorScheme = args.palette || args.colorScheme || @colorScheme || "munin"
     @graphArgs = _.defaults args.graph || {},
       width:300
       height:300
@@ -39,6 +39,8 @@ this.Wonkavision.PivotTableView = class PivotTableView
       tickFormat : Rickshaw.Fixtures.Number.formatKMBT
 
     @hoverArgs = args.hover || {}
+
+    @viewType = args.viewType || args.view || @detectViewType(args)
   
   memberSpan : (member) -> member.members?.nonEmpty().leaves().length
     
