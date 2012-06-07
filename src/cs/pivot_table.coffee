@@ -6,9 +6,16 @@ this.Wonkavision.PivotTable = class PivotTable
       this[axis.name] = new PivotTable.Axis(axis.name, axis.dimensions.slice(0), this)
     @measuresAxis = options.measuresAxis || options.measuresOn || "columns"
     @initializeAxes()
+    @seriesCells = {}
 
     for key, cell of @cellset.cells
       axis.registerCell(cell) for axis in @axes
+      if @seriesDimension?
+        skey = cell.key[@seriesDimension.keyIndex]
+        sc = (@seriesCells[skey] ||= [])
+        sc.push cell
+
+    console.debug this
 
     this[@measuresAxis]?.appendMeasures() if @measuresAxis?  
 
@@ -62,10 +69,11 @@ this.Wonkavision.ChartTable = class ChartTable extends PivotTable
       _.map @cellset.measureNames, (measureName) =>
         name : measureName
         data : @seriesFromMeasure keyMembers, measureName
-    else if @seriesDimension?
-      _.map @seriesDimension.members, (seriesMember) =>
+    else if @seriesDimension?      
+      seriesMembers = _.filter @seriesDimension.members, (m) => @seriesCells[m.key]?
+      _.map seriesMembers, (seriesMember) =>
         name : seriesMember.caption
-        data : @seriesFromMember keyMembers, seriesMember        
+        data : @seriesFromMember keyMembers, seriesMember
 
   seriesFromMeasure : (keyMembers, measureName) ->
     _.map @xAxisDimension.members, (x) =>
@@ -98,6 +106,7 @@ this.Wonkavision.PivotTable.Axis = class Axis
     depth = key.length
     if depth < @dimensions.length
       for member in @dimensions[depth].members
+        member.isEmpty = true
         childKey = key.slice(0)
         childKey.push(member.key)
         level = parent.members.push new Member(childKey, parent, depth + @startIndex, member)
@@ -128,6 +137,7 @@ this.Wonkavision.PivotTable.Member = class Member
 
   registerCell : (cell) ->
     @isEmpty = false
+    @member.isEmpty = false
     unless @isLeaf
       childIndex = @keyIndex + 1
       childKey = cell.key[@axis.startIndex..childIndex]

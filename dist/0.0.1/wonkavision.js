@@ -374,7 +374,7 @@ OTHER DEALINGS IN THE SOFTWARE.
   };
   this.Wonkavision.PivotTable = PivotTable = (function() {
     function PivotTable(cellset, options) {
-      var axis, cell, key, _i, _len, _ref, _ref2, _ref3;
+      var axis, cell, key, sc, skey, _base, _i, _len, _ref, _ref2, _ref3;
       this.cellset = cellset;
       if (options == null) {
         options = {};
@@ -385,6 +385,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       }, this));
       this.measuresAxis = options.measuresAxis || options.measuresOn || "columns";
       this.initializeAxes();
+      this.seriesCells = {};
       _ref = this.cellset.cells;
       for (key in _ref) {
         cell = _ref[key];
@@ -393,7 +394,13 @@ OTHER DEALINGS IN THE SOFTWARE.
           axis = _ref2[_i];
           axis.registerCell(cell);
         }
+        if (this.seriesDimension != null) {
+          skey = cell.key[this.seriesDimension.keyIndex];
+          sc = ((_base = this.seriesCells)[skey] || (_base[skey] = []));
+          sc.push(cell);
+        }
       }
+      console.debug(this);
       if (this.measuresAxis != null) {
         if ((_ref3 = this[this.measuresAxis]) != null) {
           _ref3.appendMeasures();
@@ -475,7 +482,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       return ChartTable.__super__.initializeAxes.call(this);
     };
     ChartTable.prototype.cellValue = function() {
-      var keyMembers;
+      var keyMembers, seriesMembers;
       keyMembers = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
       if (this.seriesSource === "measures") {
         return _.map(this.cellset.measureNames, __bind(function(measureName) {
@@ -485,7 +492,10 @@ OTHER DEALINGS IN THE SOFTWARE.
           };
         }, this));
       } else if (this.seriesDimension != null) {
-        return _.map(this.seriesDimension.members, __bind(function(seriesMember) {
+        seriesMembers = _.filter(this.seriesDimension.members, __bind(function(m) {
+          return this.seriesCells[m.key] != null;
+        }, this));
+        return _.map(seriesMembers, __bind(function(seriesMember) {
           return {
             name: seriesMember.caption,
             data: this.seriesFromMember(keyMembers, seriesMember)
@@ -548,6 +558,7 @@ OTHER DEALINGS IN THE SOFTWARE.
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           member = _ref[_i];
+          member.isEmpty = true;
           childKey = key.slice(0);
           childKey.push(member.key);
           level = parent.members.push(new Member(childKey, parent, depth + this.startIndex, member));
@@ -601,6 +612,7 @@ OTHER DEALINGS IN THE SOFTWARE.
     Member.prototype.registerCell = function(cell) {
       var child, childIndex, childKey;
       this.isEmpty = false;
+      this.member.isEmpty = false;
       if (!this.isLeaf) {
         childIndex = this.keyIndex + 1;
         childKey = cell.key.slice(this.axis.startIndex, (childIndex + 1) || 9e9);
