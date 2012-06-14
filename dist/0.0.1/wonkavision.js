@@ -458,7 +458,7 @@ OTHER DEALINGS IN THE SOFTWARE.
     PivotTable.prototype.findMeasureName = function(keyMembers) {
       var _ref;
       return (_ref = _.find(keyMembers, function(m) {
-        return m.measureName != null;
+        return (m != null ? m.measureName : void 0) != null;
       })) != null ? _ref.measureName : void 0;
     };
     return PivotTable;

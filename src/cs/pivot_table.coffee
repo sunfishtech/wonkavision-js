@@ -47,7 +47,7 @@ this.Wonkavision.PivotTable = class PivotTable
       cell[measureName].value
 
   findMeasureName : (keyMembers) ->
-    _.find( keyMembers, (m) -> m.measureName? )?.measureName
+    _.find( keyMembers, (m) -> m?.measureName? )?.measureName
 
 #----ChartTable--------------------------------------------------
 this.Wonkavision.ChartTable = class ChartTable extends PivotTable
