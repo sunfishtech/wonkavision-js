@@ -16,6 +16,7 @@ src_files:
     - src/js/remote.js
     - src/js/filter.js
     - src/js/query.js
+    - src/js/query_set.js
     - src/js/pivot_table.js
     - src/js/cellset/member.js
     - src/js/cellset/dimension.js

@@ -20,6 +20,7 @@ bundle 'wonkavision.js' do
   file 'remote.js'
   file 'filter.js'
   file 'query.js'
+  file 'query_set.js'
   file 'pivot_table.js'
   file 'cellset/member.js'
   file 'cellset/dimension.js'
