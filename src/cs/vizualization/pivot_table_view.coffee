@@ -98,7 +98,6 @@ this.Wonkavision.PivotTableView = class PivotTableView
       _.map series.data, (point) =>
         point.x = @keyToDate(point.x).unix()
         point.y = parseFloat(point.y) || 0
-        console.debug(point)
 
     container = d3.select(cell)
       .append("div")

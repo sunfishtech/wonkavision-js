@@ -63,7 +63,6 @@ this.Wonkavision.ChartTable = class ChartTable extends PivotTable
     super()
 
   cellValue : (keyMembers...) ->
-    console.debug(@)
     if @seriesSource == "measures"
       _.map @cellset.measureNames, (measureName) =>
         name : measureName

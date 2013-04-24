@@ -587,7 +587,6 @@ OTHER DEALINGS IN THE SOFTWARE.
         _this = this;
 
       keyMembers = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      console.debug(this);
       if (this.seriesSource === "measures") {
         return _.map(this.cellset.measureNames, function(measureName) {
           return {
@@ -1316,8 +1315,7 @@ OTHER DEALINGS IN THE SOFTWARE.
         series.color = _this.colorFor(series.name);
         return _.map(series.data, function(point) {
           point.x = _this.keyToDate(point.x).unix();
-          point.y = parseFloat(point.y) || 0;
-          return console.debug(point);
+          return point.y = parseFloat(point.y) || 0;
         });
       });
       container = d3.select(cell).append("div").attr("class", "wv-chart-container");

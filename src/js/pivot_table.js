@@ -138,7 +138,6 @@
         _this = this;
 
       keyMembers = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      console.debug(this);
       if (this.seriesSource === "measures") {
         return _.map(this.cellset.measureNames, function(measureName) {
           return {

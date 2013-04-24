@@ -1315,7 +1315,7 @@ OTHER DEALINGS IN THE SOFTWARE.
         series.color = _this.colorFor(series.name);
         return _.map(series.data, function(point) {
           point.x = _this.keyToDate(point.x).unix();
-          point.y = parseFloat(point.y) || 0;
+          return point.y = parseFloat(point.y) || 0;
         });
       });
       container = d3.select(cell).append("div").attr("class", "wv-chart-container");
