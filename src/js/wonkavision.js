@@ -1,9 +1,11 @@
 (function() {
   var Wonkavision;
-  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
   this.Wonkavision = Wonkavision = (function() {
     var Client;
+
     function Wonkavision() {}
+
     Wonkavision.Client = Client = (function() {
       function Client(options) {
         if (options == null) {
@@ -13,26 +15,33 @@
         this.facts = {};
         this.aggregations = {};
       }
+
       Client.prototype.query = function(options) {
         if (options == null) {
           options = {};
         }
         return new Wonkavision.Query(this, options);
       };
+
       Client.prototype.execute = function(query, options) {
-        var error, raw, success;
+        var error, raw, success,
+          _this = this;
+
         raw = options.raw;
-        success = __bind(function(data) {
+        success = function(data) {
           var response;
+
           response = raw ? data : new Wonkavision.Cellset(data.json, query);
           return options.success(response);
-        }, this);
+        };
         error = options.error || function() {};
-        this.get("query/" + query.cubeName + "/" + query.aggregationName, query.toParams(), success, error);
+        this.get("query", query.toParams(), success, error);
         return this;
       };
+
       Client.prototype.get = function(path, params, success, error) {
         var uri;
+
         uri = this.url + (this.url.substr(-1) === "/" ? "" : "/");
         uri = this.url + path;
         return Wonkavision.Remote.get(uri, {
@@ -41,9 +50,15 @@
           error: error
         });
       };
+
       return Client;
+
     })();
+
     return Wonkavision;
+
   })();
+
   this.Wonkavision.AXIS_NAMES = ["columns", "rows", "pages", "chapters", "sections"];
+
 }).call(this);

@@ -1,10 +1,15 @@
 (function() {
   var Cell, Cellset, responseData;
+
   Cellset = this.Wonkavision.Cellset;
+
   Cell = this.Wonkavision.Cell;
+
   responseData = JSON.parse(this.test_data.wv_query_response);
+
   describe("Cell", function() {
     var cell, cellset;
+
     cellset = null;
     cell = null;
     beforeEach(function() {
@@ -23,4 +28,5 @@
       return expect(cell.count).toEqual(cell.measures["count"]);
     });
   });
+
 }).call(this);

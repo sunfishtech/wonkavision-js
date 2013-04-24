@@ -1,8 +1,11 @@
 (function() {
   var Filter;
+
   Filter = this.Wonkavision.Filter;
+
   describe("Filter", function() {
     var filter;
+
     filter = null;
     beforeEach(function() {
       return filter = new Filter("dimname", {
@@ -34,4 +37,5 @@
       return expect(Filter.parse("dimname.anattr", ".").withValue(12).toString()).toEqual("dimension::dimname::anattr::eq::12");
     });
   });
+
 }).call(this);

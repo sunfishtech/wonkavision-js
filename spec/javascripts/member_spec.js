@@ -1,9 +1,13 @@
 (function() {
   var Cellset, responseData;
+
   Cellset = this.Wonkavision.Cellset;
+
   responseData = JSON.parse(this.test_data.wv_query_response);
+
   describe("Member", function() {
     var cellset, member;
+
     cellset = null;
     member = null;
     beforeEach(function() {
@@ -17,4 +21,5 @@
       return expect(member.caption).toEqual("2011-05-02");
     });
   });
+
 }).call(this);

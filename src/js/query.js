@@ -1,10 +1,13 @@
 (function() {
-  var Filter, Query;
-  var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+  var Filter, Query,
+    __slice = [].slice;
+
   Filter = this.Wonkavision.Filter;
+
   this.Wonkavision.Query = Query = (function() {
     function Query(client, query) {
-      var axis, _i, _j, _len, _len2, _ref, _ref2, _this;
+      var axis, _i, _j, _len, _len1, _ref, _ref1, _this;
+
       this.client = client;
       if (query == null) {
         query = {};
@@ -19,9 +22,9 @@
       this.axes = [];
       this.filters = [];
       this.selectedMeasures = [];
-      _ref2 = Wonkavision.AXIS_NAMES;
-      for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-        axis = _ref2[_j];
+      _ref1 = Wonkavision.AXIS_NAMES;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        axis = _ref1[_j];
         if (query[axis] != null) {
           this[axis](query[axis]);
         }
@@ -35,42 +38,35 @@
       if (query.from != null) {
         this.from(query.from);
       }
-      if (query.cube != null) {
-        this.cube(query.cube);
-      }
-      if (query.aggregation != null) {
-        this.aggregation(query.aggregation);
-      }
     }
+
     Query.prototype.cube = function(cubeName) {
       this.cubeName = cubeName;
       return this;
     };
-    Query.prototype.aggregation = function(aggregationName) {
-      this.aggregationName = aggregationName;
-      return this;
-    };
-    Query.prototype.from = function(cubeName, aggregationName) {
-      if (aggregationName == null) {
-        aggregationName = cubeName;
-      }
+
+    Query.prototype.from = function(cubeName) {
       this.cubeName = cubeName;
-      this.aggregationName = aggregationName;
       return this;
     };
+
     Query.prototype.measures = function() {
       var measures;
+
       measures = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
       this.selectedMeasures = this.selectedMeasures.concat(_.flatten(measures));
       return this;
     };
+
     Query.prototype.where = function(criteria) {
       var filter, value;
+
       if (criteria == null) {
         criteria = {};
       }
       this.filters = this.filters.concat((function() {
         var _results;
+
         _results = [];
         for (filter in criteria) {
           value = criteria[filter];
@@ -80,12 +76,15 @@
       })());
       return this;
     };
+
     Query.prototype.toParams = function() {
       var axisName, f, query, _i, _len, _ref;
+
       query = {
         measures: this.selectedMeasures.join(this.listDelimiter),
         filters: ((function() {
           var _i, _len, _ref, _results;
+
           _ref = this.filters;
           _results = [];
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -104,32 +103,42 @@
       }
       return query;
     };
+
     Query.prototype.toString = function() {
       return toHash().toString();
     };
+
     Query.prototype.execute = function(options) {
       if (options == null) {
         options = {};
       }
       return this.client.execute(this, options);
     };
+
     Query.prototype.getAxis = function(axisName) {
       return this.axes[Wonkavision.AXIS_NAMES.indexOf(axisName)];
     };
+
     Query.prototype.select = function(axis) {
-      return __bind(function() {
+      var _this = this;
+
+      return function() {
         var dimensions, ordinal;
+
         dimensions = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
         ordinal = Wonkavision.AXIS_NAMES.indexOf(axis);
         if (ordinal >= 0) {
-          if (this.axes.length > ordinal) {
-            dimensions = this.axes[ordinal].concat(dimensions);
+          if (_this.axes.length > ordinal) {
+            dimensions = _this.axes[ordinal].concat(dimensions);
           }
-          this.axes[ordinal] = _.flatten(dimensions);
+          _this.axes[ordinal] = _.flatten(dimensions);
         }
-        return this;
-      }, this);
+        return _this;
+      };
     };
+
     return Query;
+
   })();
+
 }).call(this);

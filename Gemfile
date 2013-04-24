@@ -1,7 +1,7 @@
 source "http://www.rubygems.org"
 
 gem "jbundle"
-gem "jasmine"
+gem "jasmine", "1.0.2.1"
 gem "guard-coffeescript"
 
 #OSX

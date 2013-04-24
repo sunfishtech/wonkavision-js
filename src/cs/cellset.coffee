@@ -4,7 +4,7 @@ Filter = this.Wonkavision.Filter
 
 this.Wonkavision.Cellset = class Cellset
   constructor : (data = {}, @query=null) ->
-    @aggregation = data.aggregation || null
+    @cube = data.cube || null
     
     slicer = data.slicer || []
     filters = data.filters || []

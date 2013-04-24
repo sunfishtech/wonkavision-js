@@ -25,10 +25,12 @@ OTHER DEALINGS IN THE SOFTWARE.
 ------------------------------------------------------------------*/
 (function() {
   var Wonkavision;
-  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
   this.Wonkavision = Wonkavision = (function() {
     var Client;
+
     function Wonkavision() {}
+
     Wonkavision.Client = Client = (function() {
       function Client(options) {
         if (options == null) {
@@ -38,26 +40,33 @@ OTHER DEALINGS IN THE SOFTWARE.
         this.facts = {};
         this.aggregations = {};
       }
+
       Client.prototype.query = function(options) {
         if (options == null) {
           options = {};
         }
         return new Wonkavision.Query(this, options);
       };
+
       Client.prototype.execute = function(query, options) {
-        var error, raw, success;
+        var error, raw, success,
+          _this = this;
+
         raw = options.raw;
-        success = __bind(function(data) {
+        success = function(data) {
           var response;
+
           response = raw ? data : new Wonkavision.Cellset(data.json, query);
           return options.success(response);
-        }, this);
+        };
         error = options.error || function() {};
-        this.get("query/" + query.cubeName + "/" + query.aggregationName, query.toParams(), success, error);
+        this.get("query", query.toParams(), success, error);
         return this;
       };
+
       Client.prototype.get = function(path, params, success, error) {
         var uri;
+
         uri = this.url + (this.url.substr(-1) === "/" ? "" : "/");
         uri = this.url + path;
         return Wonkavision.Remote.get(uri, {
@@ -66,23 +75,32 @@ OTHER DEALINGS IN THE SOFTWARE.
           error: error
         });
       };
+
       return Client;
+
     })();
+
     return Wonkavision;
+
   })();
+
   this.Wonkavision.AXIS_NAMES = ["columns", "rows", "pages", "chapters", "sections"];
+
 }).call(this);
 
 (function() {
   var Remote;
+
   this.Wonkavision.Remote = Remote = (function() {
     function Remote(options) {
       if (options == null) {
         options = {};
       }
     }
+
     Remote.prototype.xhr = function(options) {
       var settings, url;
+
       url = options.url;
       settings = this.createSettings(url, options);
       settings.ajax = settings.xhr();
@@ -93,6 +111,7 @@ OTHER DEALINGS IN THE SOFTWARE.
         return this.httpData(settings);
       }
     };
+
     Remote.prototype.prepareUrl = function(settings) {
       if (settings.type === "GET" && settings.data) {
         settings.url += /\?/.test(settings.url) ? "&" : "?";
@@ -100,6 +119,7 @@ OTHER DEALINGS IN THE SOFTWARE.
         return settings.data = null;
       }
     };
+
     Remote.prototype.createSettings = function(url, options) {
       if (options == null) {
         options = {};
@@ -116,8 +136,10 @@ OTHER DEALINGS IN THE SOFTWARE.
         }
       };
     };
+
     Remote.prototype.toParams = function(data) {
       var name, parts, value;
+
       if (data == null) {
         data = {};
       }
@@ -128,13 +150,16 @@ OTHER DEALINGS IN THE SOFTWARE.
       }
       return encodeURI(parts.join("&"));
     };
+
     Remote.prototype.httpData = function(settings) {
       return settings.ajax.onreadystatechange = function() {
-        var data, json;
+        var data, error, json;
+
         if (settings.ajax.readyState === 4) {
           try {
             json = JSON.parse(settings.ajax.responseText);
-          } catch (error) {
+          } catch (_error) {
+            error = _error;
             console.log("Could not parse response (" + settings.ajax.responseText + ") as JSON:" + error);
           }
           data = {
@@ -156,24 +181,31 @@ OTHER DEALINGS IN THE SOFTWARE.
         }
       };
     };
+
     return Remote;
+
   })();
+
   this.Wonkavision.Remote.ajax = function(options) {
     return new Remote().xhr(options);
   };
+
   this.Wonkavision.Remote.get = function(url, options) {
     options.url = url;
     return new Remote().xhr(options);
   };
+
   this.Wonkavision.Remote.post = function(url, options) {
     options.url = url;
     options.type = "POST";
     return new Remote().xhr();
   };
+
 }).call(this);
 
 (function() {
   var Filter;
+
   this.Wonkavision.Filter = Filter = (function() {
     function Filter(name, options) {
       this.name = name;
@@ -186,17 +218,22 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.attributeName = options.attributeName || (this.isDimension ? "key" : "count");
       this.operators = ["eq", "ne", "gt", "gte", "lt", "lte", "in", "nin"];
     }
+
     Filter.prototype.isDimension = function() {
       return this.memberType === "dimension";
     };
+
     Filter.prototype.isMeasure = function() {
       return this.memberType === "measure";
     };
+
     Filter.prototype.toString = function() {
       return [this.memberType, this.name, this.attributeName, this.operator, this.value.toString()].join("::");
     };
+
     Filter.prototype.parse = function(filterString, delim) {
       var parts;
+
       if (delim == null) {
         delim = "::";
       }
@@ -212,27 +249,35 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.value = parts.shift() || this.value;
       return this;
     };
+
     Filter.prototype.withValue = function(val) {
       this.value = val;
       return this;
     };
+
     return Filter;
+
   })();
+
   this.Wonkavision.Filter.parse = function(filterString, delim) {
     if (delim == null) {
       delim = "::";
     }
     return new Filter("").parse(filterString, delim);
   };
+
 }).call(this);
 
 (function() {
-  var Filter, Query;
-  var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+  var Filter, Query,
+    __slice = [].slice;
+
   Filter = this.Wonkavision.Filter;
+
   this.Wonkavision.Query = Query = (function() {
     function Query(client, query) {
-      var axis, _i, _j, _len, _len2, _ref, _ref2, _this;
+      var axis, _i, _j, _len, _len1, _ref, _ref1, _this;
+
       this.client = client;
       if (query == null) {
         query = {};
@@ -247,9 +292,9 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.axes = [];
       this.filters = [];
       this.selectedMeasures = [];
-      _ref2 = Wonkavision.AXIS_NAMES;
-      for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-        axis = _ref2[_j];
+      _ref1 = Wonkavision.AXIS_NAMES;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        axis = _ref1[_j];
         if (query[axis] != null) {
           this[axis](query[axis]);
         }
@@ -263,42 +308,35 @@ OTHER DEALINGS IN THE SOFTWARE.
       if (query.from != null) {
         this.from(query.from);
       }
-      if (query.cube != null) {
-        this.cube(query.cube);
-      }
-      if (query.aggregation != null) {
-        this.aggregation(query.aggregation);
-      }
     }
+
     Query.prototype.cube = function(cubeName) {
       this.cubeName = cubeName;
       return this;
     };
-    Query.prototype.aggregation = function(aggregationName) {
-      this.aggregationName = aggregationName;
-      return this;
-    };
-    Query.prototype.from = function(cubeName, aggregationName) {
-      if (aggregationName == null) {
-        aggregationName = cubeName;
-      }
+
+    Query.prototype.from = function(cubeName) {
       this.cubeName = cubeName;
-      this.aggregationName = aggregationName;
       return this;
     };
+
     Query.prototype.measures = function() {
       var measures;
+
       measures = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
       this.selectedMeasures = this.selectedMeasures.concat(_.flatten(measures));
       return this;
     };
+
     Query.prototype.where = function(criteria) {
       var filter, value;
+
       if (criteria == null) {
         criteria = {};
       }
       this.filters = this.filters.concat((function() {
         var _results;
+
         _results = [];
         for (filter in criteria) {
           value = criteria[filter];
@@ -308,12 +346,15 @@ OTHER DEALINGS IN THE SOFTWARE.
       })());
       return this;
     };
+
     Query.prototype.toParams = function() {
       var axisName, f, query, _i, _len, _ref;
+
       query = {
         measures: this.selectedMeasures.join(this.listDelimiter),
         filters: ((function() {
           var _i, _len, _ref, _results;
+
           _ref = this.filters;
           _results = [];
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -332,66 +373,108 @@ OTHER DEALINGS IN THE SOFTWARE.
       }
       return query;
     };
+
     Query.prototype.toString = function() {
       return toHash().toString();
     };
+
     Query.prototype.execute = function(options) {
       if (options == null) {
         options = {};
       }
       return this.client.execute(this, options);
     };
+
     Query.prototype.getAxis = function(axisName) {
       return this.axes[Wonkavision.AXIS_NAMES.indexOf(axisName)];
     };
+
     Query.prototype.select = function(axis) {
-      return __bind(function() {
+      var _this = this;
+
+      return function() {
         var dimensions, ordinal;
+
         dimensions = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
         ordinal = Wonkavision.AXIS_NAMES.indexOf(axis);
         if (ordinal >= 0) {
-          if (this.axes.length > ordinal) {
-            dimensions = this.axes[ordinal].concat(dimensions);
+          if (_this.axes.length > ordinal) {
+            dimensions = _this.axes[ordinal].concat(dimensions);
           }
-          this.axes[ordinal] = _.flatten(dimensions);
+          _this.axes[ordinal] = _.flatten(dimensions);
         }
-        return this;
-      }, this);
+        return _this;
+      };
     };
+
     return Query;
+
   })();
+
 }).call(this);
 
 (function() {
-  var Axis, ChartTable, MeasureMember, Member, MemberCollection, PivotTable;
-  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __slice = Array.prototype.slice, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
-    for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
-    function ctor() { this.constructor = child; }
-    ctor.prototype = parent.prototype;
-    child.prototype = new ctor;
-    child.__super__ = parent.prototype;
-    return child;
-  };
+  var Client, Query, QuerySet;
+
+  Query = this.Wonkavision.Query;
+
+  Client = this.Wonkavision.Client;
+
+  this.Wonkavision.QuerySet = QuerySet = (function() {
+    function QuerySet(options) {
+      if (options == null) {
+        options = {};
+      }
+      this.serverUrl = options.url || options.serverUrl || "";
+      this.client = options.client || new Client(this.serverUrl);
+      this.queries = [];
+      this.global = new Query();
+    }
+
+    QuerySet.prototype.addQuery = function(query) {
+      var newQuery;
+
+      if (query == null) {
+        query = {};
+      }
+      newQuery = this.client.query(query);
+      return this.queries.push(this.client.query(query));
+    };
+
+    return QuerySet;
+
+  })();
+
+}).call(this);
+
+(function() {
+  var Axis, ChartTable, MeasureMember, Member, MemberCollection, PivotTable,
+    __slice = [].slice,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
   this.Wonkavision.PivotTable = PivotTable = (function() {
     function PivotTable(cellset, options) {
-      var axis, cell, key, sc, skey, _base, _i, _len, _ref, _ref2, _ref3;
+      var axis, cell, key, sc, skey, _base, _i, _len, _ref, _ref1, _ref2,
+        _this = this;
+
       this.cellset = cellset;
       if (options == null) {
         options = {};
       }
       _.bindAll(this, "cellValues", "cellValue");
-      this.axes = _.map(this.cellset.axes, __bind(function(axis) {
-        return this[axis.name] = new PivotTable.Axis(axis.name, axis.dimensions.slice(0), this);
-      }, this));
+      this.axes = _.map(this.cellset.axes, function(axis) {
+        return _this[axis.name] = new PivotTable.Axis(axis.name, axis.dimensions.slice(0), _this);
+      });
       this.measuresAxis = options.measuresAxis || options.measuresOn || "columns";
       this.initializeAxes();
       this.seriesCells = {};
       _ref = this.cellset.cells;
       for (key in _ref) {
         cell = _ref[key];
-        _ref2 = this.axes;
-        for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
-          axis = _ref2[_i];
+        _ref1 = this.axes;
+        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+          axis = _ref1[_i];
           axis.registerCell(cell);
         }
         if (this.seriesDimension != null) {
@@ -400,18 +483,19 @@ OTHER DEALINGS IN THE SOFTWARE.
           sc.push(cell);
         }
       }
-      console.debug(this);
       if (this.measuresAxis != null) {
-        if ((_ref3 = this[this.measuresAxis]) != null) {
-          _ref3.appendMeasures();
+        if ((_ref2 = this[this.measuresAxis]) != null) {
+          _ref2.appendMeasures();
         }
       }
       if (!((this.rows != null) && !this.rows.isEmpty)) {
         this.pivot();
       }
     }
+
     PivotTable.prototype.initializeAxes = function() {
       var axis, _i, _len, _ref, _results;
+
       _ref = this.axes;
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -420,30 +504,39 @@ OTHER DEALINGS IN THE SOFTWARE.
       }
       return _results;
     };
+
     PivotTable.prototype.pivot = function() {
       var r;
+
       r = this.rows;
       this.rows = this.columns;
       return this.columns = r;
     };
+
     PivotTable.prototype.cellValues = function(rowMemberOrMembers) {
-      var rowMember;
+      var rowMember,
+        _this = this;
+
       rowMember = _.isArray(rowMemberOrMembers) ? _.last(rowMemberOrMembers) : rowMemberOrMembers;
       if (this.columns && !this.columns.isEmpty) {
-        return _.map(this.columns.members.nonEmpty().leaves(), __bind(function(colMember) {
-          return this.cellValue(rowMember, colMember);
-        }, this));
+        return _.map(this.columns.members.nonEmpty().leaves(), function(colMember) {
+          return _this.cellValue(rowMember, colMember);
+        });
       } else {
         return [this.cellValue(rowMember)];
       }
     };
+
     PivotTable.prototype.cellValue = function() {
       var keyMembers;
+
       keyMembers = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
       return this.extractValue(keyMembers);
     };
+
     PivotTable.prototype.extractValue = function(keyMembers, measureName) {
       var cell, cellKey;
+
       cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), function(m) {
         return m.keyIndex;
       }), function(m) {
@@ -455,16 +548,22 @@ OTHER DEALINGS IN THE SOFTWARE.
         return cell[measureName].value;
       }
     };
+
     PivotTable.prototype.findMeasureName = function(keyMembers) {
       var _ref;
+
       return (_ref = _.find(keyMembers, function(m) {
         return (m != null ? m.measureName : void 0) != null;
       })) != null ? _ref.measureName : void 0;
     };
+
     return PivotTable;
+
   })();
-  this.Wonkavision.ChartTable = ChartTable = (function() {
-    __extends(ChartTable, PivotTable);
+
+  this.Wonkavision.ChartTable = ChartTable = (function(_super) {
+    __extends(ChartTable, _super);
+
     function ChartTable(cellset, options) {
       if (options == null) {
         options = {};
@@ -473,6 +572,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.seriesSource = options.seriesSource || options.seriesFrom || (cellset.measureNames.length > 1 ? "measures" : "rows");
       ChartTable.__super__.constructor.call(this, cellset, options);
     }
+
     ChartTable.prototype.initializeAxes = function() {
       this.xAxisDimension = this.columns.dimensions.pop();
       this.seriesDimension = this.seriesSource !== "measures" && (this[this.seriesSource] != null) ? this[this.seriesSource].dimensions.pop() : void 0;
@@ -481,55 +581,69 @@ OTHER DEALINGS IN THE SOFTWARE.
       }
       return ChartTable.__super__.initializeAxes.call(this);
     };
+
     ChartTable.prototype.cellValue = function() {
-      var keyMembers, seriesMembers;
+      var keyMembers, seriesMembers,
+        _this = this;
+
       keyMembers = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
       if (this.seriesSource === "measures") {
-        return _.map(this.cellset.measureNames, __bind(function(measureName) {
+        return _.map(this.cellset.measureNames, function(measureName) {
           return {
             name: measureName,
-            data: this.seriesFromMeasure(keyMembers, measureName)
+            data: _this.seriesFromMeasure(keyMembers, measureName)
           };
-        }, this));
+        });
       } else if (this.seriesDimension != null) {
-        seriesMembers = _.filter(this.seriesDimension.members, __bind(function(m) {
-          return this.seriesCells[m.key] != null;
-        }, this));
-        return _.map(seriesMembers, __bind(function(seriesMember) {
+        seriesMembers = _.filter(this.seriesDimension.members, function(m) {
+          return _this.seriesCells[m.key] != null;
+        });
+        return _.map(seriesMembers, function(seriesMember) {
           return {
             name: seriesMember.caption,
-            data: this.seriesFromMember(keyMembers, seriesMember)
+            data: _this.seriesFromMember(keyMembers, seriesMember)
           };
-        }, this));
+        });
       }
     };
+
     ChartTable.prototype.seriesFromMeasure = function(keyMembers, measureName) {
-      return _.map(this.xAxisDimension.members, __bind(function(x) {
+      var _this = this;
+
+      return _.map(this.xAxisDimension.members, function(x) {
         var key, pivotMember, xMember;
+
         xMember = Member.fromDimensionMember(x);
         pivotMember = new MeasureMember(measureName, xMember);
         key = keyMembers.concat([pivotMember]);
         return {
           x: x.key,
-          y: this.extractValue(key, measureName)
+          y: _this.extractValue(key, measureName)
         };
-      }, this));
+      });
     };
+
     ChartTable.prototype.seriesFromMember = function(keyMembers, member) {
-      var pivotMember;
+      var pivotMember,
+        _this = this;
+
       pivotMember = Member.fromDimensionMember(member);
-      return _.map(this.xAxisDimension.members, __bind(function(x) {
+      return _.map(this.xAxisDimension.members, function(x) {
         var key, xMember;
+
         xMember = Member.fromDimensionMember(x);
         key = keyMembers.concat([pivotMember, xMember]);
         return {
           x: x.key,
-          y: this.extractValue(key)
+          y: _this.extractValue(key)
         };
-      }, this));
+      });
     };
+
     return ChartTable;
-  })();
+
+  })(PivotTable);
+
   this.Wonkavision.PivotTable.Axis = Axis = (function() {
     function Axis(name, dimensions, pivotTable) {
       this.name = name;
@@ -537,6 +651,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.pivotTable = pivotTable;
       this.members = new MemberCollection();
     }
+
     Axis.prototype.initialize = function() {
       if (!(this.isEmpty = this.dimensions.length < 1)) {
         this.startIndex = this.dimensions[0].keyIndex;
@@ -544,8 +659,10 @@ OTHER DEALINGS IN THE SOFTWARE.
         return this.initLevels();
       }
     };
+
     Axis.prototype.initLevels = function(key, parent) {
       var childKey, depth, level, member, _i, _len, _ref, _results;
+
       if (key == null) {
         key = [];
       }
@@ -567,22 +684,31 @@ OTHER DEALINGS IN THE SOFTWARE.
         return _results;
       }
     };
+
     Axis.prototype.registerCell = function(cell) {
       var level, levelKey;
-      if (!(cell.empty || this.isEmpty)) {
-        levelKey = cell.key.slice(this.startIndex, (this.startIndex + 1) || 9e9);
+
+      if (!(cell.empty || this.isEmpty || cell.key.length <= this.startIndex)) {
+        levelKey = cell.key.slice(this.startIndex, +this.startIndex + 1 || 9e9);
         level = this.members.get(levelKey);
-        return level.registerCell(cell);
+        if (level) {
+          return level.registerCell(cell);
+        }
       }
     };
+
     Axis.prototype.appendMeasures = function() {
       return this.members.appendMeasures(this.pivotTable.cellset);
     };
+
     return Axis;
+
   })();
+
   this.Wonkavision.PivotTable.Member = Member = (function() {
     function Member(key, parent, keyIndex, member) {
       var _ref;
+
       this.key = key;
       this.parent = parent;
       this.keyIndex = keyIndex;
@@ -596,9 +722,11 @@ OTHER DEALINGS IN THE SOFTWARE.
         this.members = new MemberCollection();
       }
     }
+
     Member.prototype.cellKey = function() {
       return this.key;
     };
+
     Member.prototype.leaves = function(nonEmpty) {
       if (nonEmpty == null) {
         nonEmpty = false;
@@ -609,24 +737,33 @@ OTHER DEALINGS IN THE SOFTWARE.
         return this.members.leaves(nonEmpty);
       }
     };
+
     Member.prototype.registerCell = function(cell) {
       var child, childIndex, childKey;
+
       this.isEmpty = false;
       this.member.isEmpty = false;
       if (!this.isLeaf) {
         childIndex = this.keyIndex + 1;
-        childKey = cell.key.slice(this.axis.startIndex, (childIndex + 1) || 9e9);
+        childKey = cell.key.slice(this.axis.startIndex, +childIndex + 1 || 9e9);
         child = this.members.get(childKey);
-        return child.registerCell(cell);
+        if (child) {
+          return child.registerCell(cell);
+        }
       }
     };
+
     return Member;
+
   })();
+
   this.Wonkavision.PivotTable.Member.fromDimensionMember = function(member) {
     return new Member([member.key], null, member.dimension.keyIndex, member);
   };
-  this.Wonkavision.PivotTable.MeasureMember = MeasureMember = (function() {
-    __extends(MeasureMember, Member);
+
+  this.Wonkavision.PivotTable.MeasureMember = MeasureMember = (function(_super) {
+    __extends(MeasureMember, _super);
+
     function MeasureMember(measureName, parentMember) {
       this.measureName = measureName;
       this.key = parentMember.key.concat(["@" + measureName]);
@@ -640,47 +777,60 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.isMeasure = true;
       this.keyIndex = parentMember.keyIndex;
     }
+
     MeasureMember.prototype.cellKey = function() {
       return this.key.slice(0, -1);
     };
+
     return MeasureMember;
-  })();
+
+  })(Member);
+
   this.Wonkavision.PivotTable.MemberCollection = MemberCollection = (function() {
     function MemberCollection(members, isNonEmpty) {
+      var _this = this;
+
       if (members == null) {
         members = [];
       }
       this.isNonEmpty = isNonEmpty != null ? isNonEmpty : false;
       this.members = [];
       this.length = 0;
-      _.each(members, __bind(function(level) {
-        return this.push(level);
-      }, this));
+      _.each(members, function(level) {
+        return _this.push(level);
+      });
     }
+
     MemberCollection.prototype.get = function(key) {
       return _.find(this.members, function(l) {
         return l.key.toString() === key.toString();
       });
     };
+
     MemberCollection.prototype.push = function(level) {
       this.invalidateCache();
       this.length += 1;
       this.members.push(level);
       return level;
     };
+
     MemberCollection.prototype.each = function(callback) {
       return _.each(this.members, callback);
     };
+
     MemberCollection.prototype.map = function(callback) {
       return _.each(this.members, callback);
     };
+
     MemberCollection.prototype.nonEmpty = function() {
       return new MemberCollection(_.filter(this.members, function(level) {
         return !level.isEmpty;
       }), true);
     };
+
     MemberCollection.prototype.leaves = function(nonEmpty) {
       var members;
+
       if (nonEmpty == null) {
         nonEmpty = this.isNonEmpty;
       }
@@ -692,12 +842,15 @@ OTHER DEALINGS IN THE SOFTWARE.
       }
       return this.leafCache;
     };
+
     MemberCollection.prototype.at = function(idx) {
       return this.members[idx];
     };
+
     MemberCollection.prototype.toArray = function() {
       return this.members;
     };
+
     MemberCollection.prototype.flatten = function(nonEmpty, members) {
       if (members == null) {
         members = [];
@@ -715,14 +868,17 @@ OTHER DEALINGS IN THE SOFTWARE.
       });
       return members;
     };
+
     MemberCollection.prototype.partitionH = function(nonEmpty) {
       var members, reducer;
+
       if (nonEmpty == null) {
         nonEmpty = this.isNonEmpty;
       }
       members = this.flatten(nonEmpty);
       reducer = function(memo, level) {
         var curpart, lastlevel;
+
         curpart = _.last(memo);
         lastlevel = _.last(curpart);
         if (!(lastlevel && lastlevel.depth >= level.depth)) {
@@ -734,22 +890,27 @@ OTHER DEALINGS IN THE SOFTWARE.
       };
       return _.reduce(members, reducer, [[]]);
     };
+
     MemberCollection.prototype.partitionV = function(nonEmpty) {
       var members, reducer;
+
       if (nonEmpty == null) {
         nonEmpty = this.isNonEmpty;
       }
       members = this.flatten(nonEmpty);
       reducer = function(memo, level) {
         var group, _name;
+
         group = (memo[_name = level.depth] || (memo[_name] = []));
         group.push(level);
         return memo;
       };
       return _.reduce(members, reducer, []);
     };
+
     MemberCollection.prototype.appendMeasures = function(cellset) {
       var measureNames, prevLeaves;
+
       measureNames = cellset.measureNames;
       prevLeaves = this.leaves();
       _.each(prevLeaves, function(pLeaf) {
@@ -759,6 +920,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       });
       return this.invalidateCache(true);
     };
+
     MemberCollection.prototype.invalidateCache = function(recursive) {
       if (recursive == null) {
         recursive = false;
@@ -772,12 +934,16 @@ OTHER DEALINGS IN THE SOFTWARE.
         });
       }
     };
+
     return MemberCollection;
+
   })();
+
 }).call(this);
 
 (function() {
   var Member;
+
   this.Wonkavision.Member = Member = (function() {
     function Member(dimension, data) {
       this.dimension = dimension;
@@ -786,56 +952,72 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.sort = data.sort || this.key;
       this.attributes = data.attributes || {};
     }
+
     Member.prototype.toString = function() {
       return key.toString();
     };
+
     Member.prototype.toKey = function() {
       return key;
     };
+
     return Member;
+
   })();
+
 }).call(this);
 
 (function() {
   var Dimension, Member;
-  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
   Member = this.Wonkavision.Member;
+
   this.Wonkavision.Dimension = Dimension = (function() {
     function Dimension(axis, data, keyIndex) {
+      var _this = this;
+
       this.axis = axis;
       this.keyIndex = keyIndex;
       this.name = data.name;
-      this.members = _.sortBy(_.map(data.members, __bind(function(mem) {
-        return new Member(this, mem);
-      }, this)), function(member) {
+      this.members = _.sortBy(_.map(data.members, function(mem) {
+        return new Member(_this, mem);
+      }), function(member) {
         return member.sort;
       });
     }
+
     return Dimension;
+
   })();
+
 }).call(this);
 
 (function() {
   var Axis, Dimension;
+
   Dimension = this.Wonkavision.Dimension;
+
   this.Wonkavision.Axis = Axis = (function() {
     function Axis(name, cellset, data, startIndex) {
-      var dimension, idx, _len, _ref;
+      var dimension, idx, _i, _len, _ref;
+
       this.name = name;
       this.cellset = cellset;
       this.startIndex = startIndex;
       this.dimensions = [];
       this.dimensionNames = [];
       _ref = data.dimensions;
-      for (idx = 0, _len = _ref.length; idx < _len; idx++) {
+      for (idx = _i = 0, _len = _ref.length; _i < _len; idx = ++_i) {
         dimension = _ref[idx];
         this.dimensions.push(new Dimension(this, dimension, this.startIndex + idx));
         this.dimensionNames.push(dimension.name);
       }
       this.endIndex = this.startIndex + this.dimensions.length - 1;
     }
+
     Axis.prototype.dimensionNames = function() {
       var d, _i, _len, _ref, _results;
+
       _ref = this.dimensions;
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -844,12 +1026,16 @@ OTHER DEALINGS IN THE SOFTWARE.
       }
       return _results;
     };
+
     return Axis;
+
   })();
+
 }).call(this);
 
 (function() {
   var Measure;
+
   this.Wonkavision.Measure = Measure = (function() {
     function Measure(data) {
       this.name = data.name;
@@ -858,19 +1044,26 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.calculated = data.calculated || false;
       this.empty = !this.value;
     }
+
     Measure.prototype.toString = function() {
       return this.formatted_value;
     };
+
     return Measure;
+
   })();
+
 }).call(this);
 
 (function() {
   var Cell, Measure;
+
   Measure = this.Wonkavision.Measure;
+
   this.Wonkavision.Cell = Cell = (function() {
     function Cell(cellset, data) {
       var measure, _i, _len, _ref;
+
       this.cellset = cellset;
       this.measures = {};
       this.empty = true;
@@ -883,8 +1076,10 @@ OTHER DEALINGS IN THE SOFTWARE.
         this.key = data.key;
       }
     }
+
     Cell.prototype.addMeasure = function(measureData) {
       var name;
+
       name = measureData.name;
       this[name] = new Measure(measureData);
       this.measures[name] = this[name];
@@ -892,27 +1087,36 @@ OTHER DEALINGS IN THE SOFTWARE.
         return this.empty = false;
       }
     };
+
     return Cell;
+
   })();
+
 }).call(this);
 
 (function() {
   var Axis, Cell, Cellset, Filter;
+
   Cell = this.Wonkavision.Cell;
+
   Axis = this.Wonkavision.Axis;
+
   Filter = this.Wonkavision.Filter;
+
   this.Wonkavision.Cellset = Cellset = (function() {
     function Cellset(data, query) {
-      var a, axis, cell, f, filters, i, index, name, slicer, startIndex, _i, _len, _len2, _ref, _ref2;
+      var a, axis, cell, f, filters, i, index, name, slicer, startIndex, _i, _j, _len, _len1, _ref, _ref1;
+
       if (data == null) {
         data = {};
       }
       this.query = query != null ? query : null;
-      this.aggregation = data.aggregation || null;
+      this.cube = data.cube || null;
       slicer = data.slicer || [];
       filters = data.filters || [];
       this.slicer = (function() {
         var _i, _len, _results;
+
         _results = [];
         for (_i = 0, _len = slicer.length; _i < _len; _i++) {
           f = slicer[_i];
@@ -922,6 +1126,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       })();
       this.filters = (function() {
         var _i, _len, _results;
+
         _results = [];
         for (_i = 0, _len = filters.length; _i < _len; _i++) {
           f = filters[_i];
@@ -933,9 +1138,10 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.measureNames = data.measure_names || [];
       startIndex = 0;
       this.axes = (function() {
-        var _ref, _results;
+        var _i, _ref, _results;
+
         _results = [];
-        for (i = 0, _ref = data.axes.length; 0 <= _ref ? i < _ref : i > _ref; 0 <= _ref ? i++ : i--) {
+        for (i = _i = 0, _ref = data.axes.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
           axis = data.axes[i];
           name = Wonkavision.AXIS_NAMES[i];
           a = new Axis(name, this, axis, startIndex);
@@ -950,16 +1156,19 @@ OTHER DEALINGS IN THE SOFTWARE.
         cell = _ref[_i];
         this.cells[cell.key] = new Cell(this, cell);
       }
-      _ref2 = Wonkavision.AXIS_NAMES;
-      for (index = 0, _len2 = _ref2.length; index < _len2; index++) {
-        axis = _ref2[index];
+      _ref1 = Wonkavision.AXIS_NAMES;
+      for (index = _j = 0, _len1 = _ref1.length; _j < _len1; index = ++_j) {
+        axis = _ref1[index];
         this[axis] = this.axes[index];
       }
     }
+
     Cellset.prototype.cell = function() {
       var coord, coords;
+
       coords = (function() {
         var _i, _len, _results;
+
         if (typeof coord !== "undefined" && coord !== null) {
           return coord.toString();
         } else {
@@ -973,23 +1182,29 @@ OTHER DEALINGS IN THE SOFTWARE.
       }).apply(this, arguments);
       return this.cells[coords] || new Cell(this);
     };
+
     return Cellset;
+
   })();
+
 }).call(this);
 
 (function() {
   var PivotTableView;
-  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
   this.Wonkavision.PivotTableView = PivotTableView = (function() {
     function PivotTableView(options) {
       _.bindAll(this, "render", "renderTable", "renderColumnHeaders", "renderTableData");
       this.extractArgs(options);
     }
+
     PivotTableView.prototype.colorFor = function(seriesName) {
       var _base;
+
       this.colorCache || (this.colorCache = {});
       return (_base = this.colorCache)[seriesName] || (_base[seriesName] = this.palette.color());
     };
+
     PivotTableView.prototype.render = function(args) {
       this.extractArgs(args);
       this.pivot = this.viewType === "text" ? new Wonkavision.PivotTable(this.data, args) : new Wonkavision.ChartTable(this.data, args);
@@ -1001,6 +1216,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.format = d3.format(this.cellFormat);
       return this.element.append("table").attr("class", "wv-pivot-table").call(this.renderTable);
     };
+
     PivotTableView.prototype.extractArgs = function(args) {
       this.cellFormat = args.cellFormat || this.cellFormat || ",.1f";
       if (args.data) {
@@ -1023,10 +1239,13 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.hoverArgs = args.hover || {};
       return this.viewType = args.viewType || args.view || this.detectViewType(args);
     };
+
     PivotTableView.prototype.memberSpan = function(member) {
       var _ref;
+
       return (_ref = member.members) != null ? _ref.nonEmpty().leaves().length : void 0;
     };
+
     PivotTableView.prototype.renderTable = function(tableSelection) {
       this.table = tableSelection;
       if ((this.pivot.columns != null) && !this.pivot.columns.isEmpty) {
@@ -1034,8 +1253,11 @@ OTHER DEALINGS IN THE SOFTWARE.
       }
       return this.table.call(this.renderTableData);
     };
+
     PivotTableView.prototype.renderColumnHeaders = function(tableSelection) {
-      var ch, chr, colMembers, fillSpan, thead;
+      var ch, chr, colMembers, fillSpan, thead,
+        _this = this;
+
       colMembers = this.columns.partitionV();
       thead = tableSelection.append("thead");
       chr = thead.selectAll("tr.wv-col").data(colMembers).enter().append("tr").attr("class", "wv-col");
@@ -1047,12 +1269,15 @@ OTHER DEALINGS IN THE SOFTWARE.
         return d.key.toString();
       }).enter().append("th").text(function(level) {
         return level.caption;
-      }).attr("colspan", __bind(function(d) {
-        return this.memberSpan(d);
-      }, this)).attr("class", "wv-col-header");
+      }).attr("colspan", function(d) {
+        return _this.memberSpan(d);
+      }).attr("class", "wv-col-header");
     };
+
     PivotTableView.prototype.renderTableData = function(tableSelection) {
-      var cell, rh, rhr, rowMembers, self, tbody;
+      var cell, rh, rhr, rowMembers, self, tbody,
+        _this = this;
+
       rowMembers = this.rows.partitionH();
       tbody = tableSelection.append("tbody");
       rhr = tbody.selectAll("tr.wv-row").data(rowMembers).enter().append("tr").attr("class", "wv-row");
@@ -1062,9 +1287,9 @@ OTHER DEALINGS IN THE SOFTWARE.
         return d.key.toString();
       }).enter().append("th").text(function(level) {
         return level.caption;
-      }).attr("rowspan", __bind(function(d) {
-        return this.memberSpan(d);
-      }, this)).attr("class", "wv-row-header");
+      }).attr("rowspan", function(d) {
+        return _this.memberSpan(d);
+      }).attr("class", "wv-row-header");
       self = this;
       cell = rhr.selectAll("td.wv-cell").data(this.pivot.cellValues).enter().append("td").attr("class", "wv-cell");
       if (this.viewType === "text") {
@@ -1081,15 +1306,18 @@ OTHER DEALINGS IN THE SOFTWARE.
         });
       }
     };
+
     PivotTableView.prototype.renderGraph = function(data, idx, cell) {
-      var chart, container, graph, hoverDetail, x_axis, yAxis, y_axis;
-      _.map(data, __bind(function(series) {
-        series.color = this.colorFor(series.name);
-        return _.map(series.data, __bind(function(point) {
-          point.x = moment(point.x).unix();
-          return point.y = point.y || 0;
-        }, this));
-      }, this));
+      var chart, container, graph, hoverDetail, x_axis, yAxis, y_axis,
+        _this = this;
+
+      _.map(data, function(series) {
+        series.color = _this.colorFor(series.name);
+        return _.map(series.data, function(point) {
+          point.x = _this.keyToDate(point.x).unix();
+          point.y = parseFloat(point.y) || 0;
+        });
+      });
       container = d3.select(cell).append("div").attr("class", "wv-chart-container");
       chart = container.append("div").attr("class", "wv-chart");
       yAxis = container.append("div").attr("class", "wv-y-axis");
@@ -1109,6 +1337,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       }));
       return graph.render();
     };
+
     PivotTableView.prototype.detectViewType = function(args) {
       if ((args.seriesSource != null) || (args.seriesFrom != null)) {
         return "chart";
@@ -1116,7 +1345,17 @@ OTHER DEALINGS IN THE SOFTWARE.
         return "text";
       }
     };
+
+    PivotTableView.prototype.keyToDate = function(keyStr) {
+      var dateStr;
+
+      dateStr = "" + keyStr.slice(0, 4) + "-" + keyStr.slice(4, 6) + "-" + keyStr.slice(6, 8);
+      return moment(dateStr);
+    };
+
     return PivotTableView;
+
   })();
+
 }).call(this);
 

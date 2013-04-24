@@ -69,7 +69,6 @@ this.Wonkavision.PivotTableView = class PivotTableView
 
   renderTableData : (tableSelection) ->
     rowMembers = @rows.partitionH()
-
     tbody = tableSelection.append("tbody")
     rhr = tbody.selectAll("tr.wv-row")
       .data(rowMembers)
@@ -97,8 +96,9 @@ this.Wonkavision.PivotTableView = class PivotTableView
     _.map data, (series) =>
       series.color = @colorFor(series.name)
       _.map series.data, (point) =>
-        point.x = moment(point.x).unix()
-        point.y = point.y || 0
+        point.x = @keyToDate(point.x).unix()
+        point.y = parseFloat(point.y) || 0
+        console.debug(point)
 
     container = d3.select(cell)
       .append("div")
@@ -136,3 +136,7 @@ this.Wonkavision.PivotTableView = class PivotTableView
 
   detectViewType : (args) ->
     if args.seriesSource? || args.seriesFrom? then "chart" else "text"
+
+  keyToDate : (keyStr) ->
+    dateStr = "#{keyStr[0..3]}-#{keyStr[4..5]}-#{keyStr[6..7]}"
+    moment(dateStr)

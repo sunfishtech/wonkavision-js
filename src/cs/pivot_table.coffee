@@ -15,8 +15,6 @@ this.Wonkavision.PivotTable = class PivotTable
         sc = (@seriesCells[skey] ||= [])
         sc.push cell
 
-    console.debug this
-
     this[@measuresAxis]?.appendMeasures() if @measuresAxis?  
 
     #for display purposes, single axis queries render using rows
@@ -65,6 +63,7 @@ this.Wonkavision.ChartTable = class ChartTable extends PivotTable
     super()
 
   cellValue : (keyMembers...) ->
+    console.debug(@)
     if @seriesSource == "measures"
       _.map @cellset.measureNames, (measureName) =>
         name : measureName
@@ -113,10 +112,10 @@ this.Wonkavision.PivotTable.Axis = class Axis
         @initLevels(childKey, level)
 
   registerCell : (cell) ->
-    unless cell.empty || @isEmpty
+    unless cell.empty || @isEmpty || cell.key.length <= @startIndex
       levelKey = cell.key[@startIndex..@startIndex]
       level = @members.get(levelKey)
-      level.registerCell(cell)
+      level.registerCell(cell) if level
 
   appendMeasures : -> @members.appendMeasures(@pivotTable.cellset)
 
@@ -142,7 +141,7 @@ this.Wonkavision.PivotTable.Member = class Member
       childIndex = @keyIndex + 1
       childKey = cell.key[@axis.startIndex..childIndex]
       child = @members.get(childKey)
-      child.registerCell(cell)
+      child.registerCell(cell) if child
 
 this.Wonkavision.PivotTable.Member.fromDimensionMember = (member) ->
   new Member([member.key], null, member.dimension.keyIndex, member)

@@ -1,9 +1,12 @@
 (function() {
   var Cell, Measure;
+
   Measure = this.Wonkavision.Measure;
+
   this.Wonkavision.Cell = Cell = (function() {
     function Cell(cellset, data) {
       var measure, _i, _len, _ref;
+
       this.cellset = cellset;
       this.measures = {};
       this.empty = true;
@@ -16,8 +19,10 @@
         this.key = data.key;
       }
     }
+
     Cell.prototype.addMeasure = function(measureData) {
       var name;
+
       name = measureData.name;
       this[name] = new Measure(measureData);
       this.measures[name] = this[name];
@@ -25,6 +30,9 @@
         return this.empty = false;
       }
     };
+
     return Cell;
+
   })();
+
 }).call(this);

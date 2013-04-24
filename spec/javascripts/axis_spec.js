@@ -1,9 +1,13 @@
 (function() {
   var Cellset, responseData;
+
   Cellset = this.Wonkavision.Cellset;
+
   responseData = JSON.parse(this.test_data.wv_query_response);
+
   describe("Axis", function() {
     var axis, cellset;
+
     cellset = null;
     axis = null;
     beforeEach(function() {
@@ -18,4 +22,5 @@
       return expect(axis.dimensionNames).toEqual(["context_date"]);
     });
   });
+
 }).call(this);

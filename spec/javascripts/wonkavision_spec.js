@@ -1,11 +1,16 @@
 (function() {
   var Client, client, test_data;
+
   Client = this.Wonkavision.Client;
+
   test_data = this.test_data;
+
   client = null;
+
   beforeEach(function() {
     return client = new Client();
   });
+
   describe("Client", function() {
     it("should be able to be instantiated", function() {
       return expect(client).not.toBeNull();
@@ -29,4 +34,5 @@
       });
     });
   });
+
 }).call(this);

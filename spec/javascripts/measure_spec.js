@@ -1,9 +1,13 @@
 (function() {
   var Cellset, responseData;
+
   Cellset = this.Wonkavision.Cellset;
+
   responseData = JSON.parse(this.test_data.wv_query_response);
+
   describe("Measure", function() {
     var cellset, measure;
+
     cellset = null;
     measure = null;
     beforeEach(function() {
@@ -16,4 +20,5 @@
       return expect(measure.formattedValue).toEqual("0");
     });
   });
+
 }).call(this);

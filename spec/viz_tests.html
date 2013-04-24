@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link href="../lib/rickshaw.css" media="all" rel="stylesheet" type="text/css" />
+    <link href="../dist/0.0.1/wonkavision.css" media="all" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+
+    <div id="graph"></div>
+
+    <script src="../lib/underscore.js" type="text/javascript"></script>
+    <script src="../lib/d3.v2.js" type="text/javascript"></script>
+    <script src="../lib/rickshaw.js" type="text/javascript"></script>
+    <script src="../lib/moment.js" type="text/javascript"></script>
+    <script src="../dist/0.0.1/wonkavision.js" type="text/javascript"></script>
+    <script src="javascripts/helpers/test_data.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    window.data = window.test_data.wv_query_data;
+      cs = new window.Wonkavision.Cellset(window.data);
+
+      new window.Wonkavision.PivotTableView({data:cs, element:"#graph"}).render({
+        
+          view:"chart",
+          seriesSource:"measures",
+          measuresOn:"rows",
+          palette:"cool",
+          graph:{
+            width:400,
+            height:300,
+            strokeWidth:2,
+            stroke:true,
+            renderer:'line',
+            unstack:true,
+            interpolation:'linear'
+          },
+          xAxis:{
+            ticks:20
+          }
+        
+      });
+      </script>
+  </body>
+</html>

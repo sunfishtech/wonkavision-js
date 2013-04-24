@@ -1,14 +1,21 @@
 (function() {
   var Client, Query, client, query, test_data;
+
   Client = this.Wonkavision.Client;
+
   Query = this.Wonkavision.Query;
+
   test_data = this.test_data;
+
   client = null;
+
   query = null;
+
   beforeEach(function() {
     client = new Client();
     return query = new Query(client);
   });
+
   describe("Query", function() {
     it("should be able to be instantiated", function() {
       return expect(new Query(client)).not.toBeNull;
@@ -16,6 +23,7 @@
     describe("axis query methods", function() {
       it("should create select method for each axis", function() {
         var axis, _i, _len, _ref, _results;
+
         _ref = Wonkavision.AXIS_NAMES;
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -100,6 +108,7 @@
     return describe("toParams", function() {
       return it("should prepare a delimited hash of params", function() {
         var expected;
+
         query.measures("m1", "m2").columns("c1", "c2").rows("r1", "r2").from("c", "a").where({
           r1: 3,
           "r2.key.gt": 4
@@ -114,4 +123,5 @@
       });
     });
   });
+
 }).call(this);

@@ -16,7 +16,7 @@ this.Wonkavision = class Wonkavision
 
       error = options.error || () ->
 
-      @get("query/#{query.cubeName}/#{query.aggregationName}", query.toParams(), success, error)
+      @get("query", query.toParams(), success, error)
       this
 
     get : (path, params, success, error) ->

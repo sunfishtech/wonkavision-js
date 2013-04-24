@@ -16,16 +16,11 @@ this.Wonkavision.Query = class Query
     @measures(query.measures) if query.measures?
     @where(query.where) if query.where?
     @from(query.from) if query.from?
-    @cube(query.cube) if query.cube?
-    @aggregation(query.aggregation) if query.aggregation?
 
 
   cube : (cubeName) -> @cubeName = cubeName; this
-  aggregation : (aggregationName) -> @aggregationName = aggregationName; this
-
-  from : (cubeName, aggregationName = cubeName) ->
+  from : (cubeName) ->
     @cubeName = cubeName
-    @aggregationName = aggregationName
     this
 
   measures : (measures...) ->

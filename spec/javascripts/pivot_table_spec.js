@@ -1,11 +1,17 @@
 (function() {
   var Cellset, ChartTable, PivotTable, responseData;
+
   Cellset = this.Wonkavision.Cellset;
+
   PivotTable = this.Wonkavision.PivotTable;
+
   ChartTable = this.Wonkavision.ChartTable;
+
   responseData = JSON.parse(this.test_data.wv_query_response2);
+
   describe("Pivot Table", function() {
     var cellset, columns, pivot, rows;
+
     cellset = null;
     pivot = null;
     columns = null;
@@ -29,12 +35,14 @@
     });
     it("should return a set of cell values for a row", function() {
       var vals;
+
       vals = pivot.cellValues(rows.members.at(0).members.at(0));
       expect(vals.length).toEqual(7);
       return expect(vals[0]).not.toBeNull();
     });
     describe("ChartTable", function() {
       var chart;
+
       chart = null;
       beforeEach(function() {
         return chart = new ChartTable(cellset);
@@ -53,6 +61,7 @@
       describe("cellValue", function() {
         return it("should provide an array of series (x,y) pairs", function() {
           var series;
+
           series = chart.cellValue(chart.rows.members.nonEmpty().leaves()[0]);
           expect(series.length).toEqual(1);
           expect(series[0].name).toEqual("2012-01-01");
@@ -70,6 +79,7 @@
         });
         return it("should provide an array of series (x,y) pairs", function() {
           var series;
+
           series = chart.cellValue(chart.rows.members.nonEmpty().leaves()[0]);
           expect(series.length).toEqual(1);
           expect(series[0].name).toEqual("30d_rate");
@@ -105,6 +115,7 @@
       });
       return it("should return itself for leaves when a leaf", function() {
         var leaves;
+
         leaves = columns.members.at(0).leaves();
         expect(leaves.length).toEqual(1);
         return expect(leaves[0].caption).toEqual(columns.members.at(0).caption);
@@ -119,6 +130,7 @@
       });
       it("should iterate the members using each", function() {
         var collected;
+
         collected = [];
         columns.members.each(function(l) {
           return collected.push(l);
@@ -127,6 +139,7 @@
       });
       it("should present a collection of non empty members", function() {
         var nonempty;
+
         nonempty = columns.members.nonEmpty();
         return expect(nonempty.length).toEqual(7);
       });
@@ -145,6 +158,7 @@
       });
       it("should provide a depth first collection of all notes via allLevels", function() {
         var allLevels;
+
         allLevels = rows.members.flatten();
         expect(allLevels.length).toEqual(2);
         expect(allLevels[0].caption).toEqual("30 day");
@@ -152,12 +166,14 @@
       });
       it("should partition members horizontally", function() {
         var part;
+
         part = rows.members.partitionH();
         expect(part.length).toEqual(1);
         return expect(part[0].length).toEqual(2);
       });
       it("should partition members, depth last", function() {
         var part;
+
         part = rows.members.partitionV();
         expect(part.length).toEqual(2);
         expect(part[0].length).toEqual(1);
@@ -165,6 +181,7 @@
       });
       it("should append measures using appendMeasures", function() {
         var flat;
+
         rows.appendMeasures();
         flat = rows.members.flatten();
         expect(flat.length).toEqual(3);
@@ -174,6 +191,7 @@
       });
       return it("should retrieve cell values with appended measures", function() {
         var vals;
+
         rows.appendMeasures();
         vals = pivot.cellValues(rows.members.at(0).members.at(0));
         expect(vals.length).toEqual(7);
@@ -181,4 +199,5 @@
       });
     });
   });
+
 }).call(this);

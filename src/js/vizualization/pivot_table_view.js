@@ -1,16 +1,19 @@
 (function() {
   var PivotTableView;
-  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
   this.Wonkavision.PivotTableView = PivotTableView = (function() {
     function PivotTableView(options) {
       _.bindAll(this, "render", "renderTable", "renderColumnHeaders", "renderTableData");
       this.extractArgs(options);
     }
+
     PivotTableView.prototype.colorFor = function(seriesName) {
       var _base;
+
       this.colorCache || (this.colorCache = {});
       return (_base = this.colorCache)[seriesName] || (_base[seriesName] = this.palette.color());
     };
+
     PivotTableView.prototype.render = function(args) {
       this.extractArgs(args);
       this.pivot = this.viewType === "text" ? new Wonkavision.PivotTable(this.data, args) : new Wonkavision.ChartTable(this.data, args);
@@ -22,6 +25,7 @@
       this.format = d3.format(this.cellFormat);
       return this.element.append("table").attr("class", "wv-pivot-table").call(this.renderTable);
     };
+
     PivotTableView.prototype.extractArgs = function(args) {
       this.cellFormat = args.cellFormat || this.cellFormat || ",.1f";
       if (args.data) {
@@ -44,10 +48,13 @@
       this.hoverArgs = args.hover || {};
       return this.viewType = args.viewType || args.view || this.detectViewType(args);
     };
+
     PivotTableView.prototype.memberSpan = function(member) {
       var _ref;
+
       return (_ref = member.members) != null ? _ref.nonEmpty().leaves().length : void 0;
     };
+
     PivotTableView.prototype.renderTable = function(tableSelection) {
       this.table = tableSelection;
       if ((this.pivot.columns != null) && !this.pivot.columns.isEmpty) {
@@ -55,8 +62,11 @@
       }
       return this.table.call(this.renderTableData);
     };
+
     PivotTableView.prototype.renderColumnHeaders = function(tableSelection) {
-      var ch, chr, colMembers, fillSpan, thead;
+      var ch, chr, colMembers, fillSpan, thead,
+        _this = this;
+
       colMembers = this.columns.partitionV();
       thead = tableSelection.append("thead");
       chr = thead.selectAll("tr.wv-col").data(colMembers).enter().append("tr").attr("class", "wv-col");
@@ -68,12 +78,15 @@
         return d.key.toString();
       }).enter().append("th").text(function(level) {
         return level.caption;
-      }).attr("colspan", __bind(function(d) {
-        return this.memberSpan(d);
-      }, this)).attr("class", "wv-col-header");
+      }).attr("colspan", function(d) {
+        return _this.memberSpan(d);
+      }).attr("class", "wv-col-header");
     };
+
     PivotTableView.prototype.renderTableData = function(tableSelection) {
-      var cell, rh, rhr, rowMembers, self, tbody;
+      var cell, rh, rhr, rowMembers, self, tbody,
+        _this = this;
+
       rowMembers = this.rows.partitionH();
       tbody = tableSelection.append("tbody");
       rhr = tbody.selectAll("tr.wv-row").data(rowMembers).enter().append("tr").attr("class", "wv-row");
@@ -83,9 +96,9 @@
         return d.key.toString();
       }).enter().append("th").text(function(level) {
         return level.caption;
-      }).attr("rowspan", __bind(function(d) {
-        return this.memberSpan(d);
-      }, this)).attr("class", "wv-row-header");
+      }).attr("rowspan", function(d) {
+        return _this.memberSpan(d);
+      }).attr("class", "wv-row-header");
       self = this;
       cell = rhr.selectAll("td.wv-cell").data(this.pivot.cellValues).enter().append("td").attr("class", "wv-cell");
       if (this.viewType === "text") {
@@ -102,15 +115,19 @@
         });
       }
     };
+
     PivotTableView.prototype.renderGraph = function(data, idx, cell) {
-      var chart, container, graph, hoverDetail, x_axis, yAxis, y_axis;
-      _.map(data, __bind(function(series) {
-        series.color = this.colorFor(series.name);
-        return _.map(series.data, __bind(function(point) {
-          point.x = moment(point.x).unix();
-          return point.y = point.y || 0;
-        }, this));
-      }, this));
+      var chart, container, graph, hoverDetail, x_axis, yAxis, y_axis,
+        _this = this;
+
+      _.map(data, function(series) {
+        series.color = _this.colorFor(series.name);
+        return _.map(series.data, function(point) {
+          point.x = _this.keyToDate(point.x).unix();
+          point.y = parseFloat(point.y) || 0;
+          return console.debug(point);
+        });
+      });
       container = d3.select(cell).append("div").attr("class", "wv-chart-container");
       chart = container.append("div").attr("class", "wv-chart");
       yAxis = container.append("div").attr("class", "wv-y-axis");
@@ -130,6 +147,7 @@
       }));
       return graph.render();
     };
+
     PivotTableView.prototype.detectViewType = function(args) {
       if ((args.seriesSource != null) || (args.seriesFrom != null)) {
         return "chart";
@@ -137,6 +155,16 @@
         return "text";
       }
     };
+
+    PivotTableView.prototype.keyToDate = function(keyStr) {
+      var dateStr;
+
+      dateStr = "" + keyStr.slice(0, 4) + "-" + keyStr.slice(4, 6) + "-" + keyStr.slice(6, 8);
+      return moment(dateStr);
+    };
+
     return PivotTableView;
+
   })();
+
 }).call(this);

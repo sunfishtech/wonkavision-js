@@ -1,15 +1,23 @@
 (function() {
   var Client, Query, QuerySet, client, querySet, test_data;
+
   Client = this.Wonkavision.Client;
+
   Query = this.Wonkavision.Query;
+
   QuerySet = this.Wonkavision.QuerySet;
+
   test_data = this.test_data;
+
   client = null;
+
   querySet = null;
+
   beforeEach(function() {
     client = new Client();
     return querySet = new QuerySet();
   });
+
   describe("QuerySet", function() {
     it("should be able to be instantiated", function() {
       return expect(new QuerySet()).not.toBeNull;
@@ -28,4 +36,5 @@
       });
     });
   });
+
 }).call(this);

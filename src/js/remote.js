@@ -1,13 +1,16 @@
 (function() {
   var Remote;
+
   this.Wonkavision.Remote = Remote = (function() {
     function Remote(options) {
       if (options == null) {
         options = {};
       }
     }
+
     Remote.prototype.xhr = function(options) {
       var settings, url;
+
       url = options.url;
       settings = this.createSettings(url, options);
       settings.ajax = settings.xhr();
@@ -18,6 +21,7 @@
         return this.httpData(settings);
       }
     };
+
     Remote.prototype.prepareUrl = function(settings) {
       if (settings.type === "GET" && settings.data) {
         settings.url += /\?/.test(settings.url) ? "&" : "?";
@@ -25,6 +29,7 @@
         return settings.data = null;
       }
     };
+
     Remote.prototype.createSettings = function(url, options) {
       if (options == null) {
         options = {};
@@ -41,8 +46,10 @@
         }
       };
     };
+
     Remote.prototype.toParams = function(data) {
       var name, parts, value;
+
       if (data == null) {
         data = {};
       }
@@ -53,13 +60,16 @@
       }
       return encodeURI(parts.join("&"));
     };
+
     Remote.prototype.httpData = function(settings) {
       return settings.ajax.onreadystatechange = function() {
-        var data, json;
+        var data, error, json;
+
         if (settings.ajax.readyState === 4) {
           try {
             json = JSON.parse(settings.ajax.responseText);
-          } catch (error) {
+          } catch (_error) {
+            error = _error;
             console.log("Could not parse response (" + settings.ajax.responseText + ") as JSON:" + error);
           }
           data = {
@@ -81,18 +91,24 @@
         }
       };
     };
+
     return Remote;
+
   })();
+
   this.Wonkavision.Remote.ajax = function(options) {
     return new Remote().xhr(options);
   };
+
   this.Wonkavision.Remote.get = function(url, options) {
     options.url = url;
     return new Remote().xhr(options);
   };
+
   this.Wonkavision.Remote.post = function(url, options) {
     options.url = url;
     options.type = "POST";
     return new Remote().xhr();
   };
+
 }).call(this);
