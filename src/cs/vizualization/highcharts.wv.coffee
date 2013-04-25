@@ -21,12 +21,35 @@ class HighchartsRenderer
   extractArgs: (args) ->
     @chartArgs = args.highchart || {}
     @chartArgs.chart = _.defaults @chartArgs.chart || {}, 
-      borderWidth:1
       borderColor:"#CCC"
       type:"line"
       backgroundColor:"white"
       spacingBottom:10
       spacingTop:10
+
+    @chartArgs.plotOptions = _.extend @chartArgs.plotOptions || {},
+      series: _.defaults @chartArgs.plotOptions?.series || {},
+        animation:false
+      line: _.defaults @chartArgs.plotOptions?.line || {},
+        marker: _.defaults @chartArgs.plotOptions?.line?.marker || {},
+          enabled:false
+        shadow:false
+      column: _.defaults @chartArgs.plotOptions?.column || {},
+        shadow:false
+      bar: _.defaults @chartArgs.plotOptions?.bar || {},
+        shadow:false
+      spline: _.defaults @chartArgs.plotOptions?.spline || {},
+        marker: _.defaults @chartArgs.plotOptions?.spline?.marker || {},
+          enabled:false
+        shadow:false
+      area: _.defaults @chartArgs.plotOptions?.area || {},
+        marker: _.defaults @chartArgs.plotOptions?.area?.marker || {},
+          enabled:false
+        shadow:false
+      areaspline: _.defaults @chartArgs.plotOptions?.areaspline || {},
+        marker: _.defaults @chartArgs.plotOptions?.areaspline?.marker || {},
+          enabled:false
+        shadow:false
 
     @chartArgs.xAxis = _.defaults @chartArgs.xAxis || {},
       type:'datetime'

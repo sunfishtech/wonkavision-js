@@ -26,10 +26,7 @@
         seriesSource:"measures",
         measuresOn:"rows",
         highchart:{
-          chart: {borderWidth:1, width:400},
-          credits: { enabled:false },
-          exporting: false,
-          rangeSelector: {selected:0},
+          chart: {width:400, type:'spline'},
           title:false,
           yAxis: {
             min:0,
@@ -39,11 +36,7 @@
             minTickInterval:7*24*60*60*1000,//a week of ticks
             title:{text:"Time"}
           },
-          plotOptions:{
-            series:{animation:false},
-            line:{marker:{enabled:false}, shadow:false}
-          }
-        }      
+        }     
     });
 
     new window.Wonkavision.PivotTableView({data:cs, element:"#rickshaw"}).render({
