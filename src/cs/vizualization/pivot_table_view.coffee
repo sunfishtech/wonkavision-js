@@ -2,20 +2,16 @@ this.Wonkavision.PivotTableView = class PivotTableView
   constructor : (options) ->
     _.bindAll this, "render", "renderTable", "renderColumnHeaders", "renderTableData"
     @extractArgs(options)
-
-  colorFor : (seriesName) ->
-    @colorCache ||= {}
-    @colorCache[seriesName] ||= @palette.color()
-
+  
   render : (args) ->
     @extractArgs(args)
     
-    @pivot = if @viewType == "text"
-      new Wonkavision.PivotTable(@data, args)
+    if @viewType == "text"
+      @pivot = new Wonkavision.PivotTable(@data, args)
     else
-      new Wonkavision.ChartTable(@data, args)
+      @pivot = new Wonkavision.ChartTable(@data, args)
+      @renderer = new Wonkavision.renderers.Rickshaw(this, args)
 
-    @palette = new Rickshaw.Color.Palette scheme : @colorScheme
     @rows = @pivot.rows.members.nonEmpty()
     @columns = @pivot.columns.members.nonEmpty()
     @format = d3.format(@cellFormat)
@@ -26,20 +22,6 @@ this.Wonkavision.PivotTableView = class PivotTableView
     @cellFormat = args.cellFormat || @cellFormat || ",.1f"
     @data = args.data if args.data
     @element = d3.selectAll(args.element) if args.element
-    @colorScheme = args.palette || args.colorScheme || @colorScheme || "munin"
-    @graphArgs = _.defaults args.graph || {},
-      width:300
-      height:300
-      renderer: 'line'
-
-    @xAxisArgs = args.xAxis || {}
-
-    @yAxisArgs = _.defaults args.yAxis || {},
-      orientation : 'left'
-      tickFormat : Rickshaw.Fixtures.Number.formatKMBT
-
-    @hoverArgs = args.hover || {}
-
     @viewType = args.viewType || args.view || @detectViewType(args)
   
   memberSpan : (member) -> member.members?.nonEmpty().leaves().length
@@ -93,49 +75,14 @@ this.Wonkavision.PivotTableView = class PivotTableView
       cell.each((data, idx) -> self.renderGraph(data, idx, this))
 
   renderGraph : (data, idx, cell) ->
-    _.map data, (series) =>
-      series.color = @colorFor(series.name)
-      _.map series.data, (point) =>
-        point.x = @keyToDate(point.x).unix()
-        point.y = parseFloat(point.y) || 0
-
+        
     container = d3.select(cell)
       .append("div")
       .attr("class","wv-chart-container")
 
-    chart = container.append("div")
-      .attr("class","wv-chart")
-
-    yAxis = container.append("div")
-      .attr("class", "wv-y-axis")
-
-    graph = new Rickshaw.Graph(
-      _.extend @graphArgs, {
-        element : chart[0][0]
-        series : data
-      }
-    )      
-
-    x_axis = new Rickshaw.Graph.Axis.Time(
-      _.extend @xAxisArgs, graph : graph
-    ) 
-
-    y_axis = new Rickshaw.Graph.Axis.Y(
-      _.extend @yAxisArgs, {
-        graph : graph
-        element : yAxis[0][0]
-      }
-    )
-
-    hoverDetail = new Rickshaw.Graph.HoverDetail(
-      _.extend @hoverArgs, graph : graph
-    )
-
-    graph.render()
+    @renderer.renderGraph(data, container)
 
   detectViewType : (args) ->
     if args.seriesSource? || args.seriesFrom? then "chart" else "text"
 
-  keyToDate : (keyStr) ->
-    dateStr = "#{keyStr[0..3]}-#{keyStr[4..5]}-#{keyStr[6..7]}"
-    moment(dateStr)
+  

@@ -1190,6 +1190,92 @@ OTHER DEALINGS IN THE SOFTWARE.
 }).call(this);
 
 (function() {
+  var RickshawRenderer, _base;
+
+  RickshawRenderer = (function() {
+    function RickshawRenderer(pivotView, options) {
+      this.view = pivotView;
+      this.extractArgs(options);
+      this.palette = new Rickshaw.Color.Palette({
+        scheme: this.colorScheme
+      });
+    }
+
+    RickshawRenderer.prototype.renderGraph = function(data, container) {
+      var chart, graph, hoverDetail, series, x_axis, yAxis, y_axis,
+        _this = this;
+
+      series = _.map(data, function(series) {
+        return {
+          name: series.name,
+          color: _this.colorFor(series.name),
+          data: _.map(series.data, function(point) {
+            return {
+              x: _this.keyToDate(point.x).unix(),
+              y: parseFloat(point.y) || 0
+            };
+          })
+        };
+      });
+      chart = container.append("div").attr("class", "wv-chart");
+      yAxis = container.append("div").attr("class", "wv-y-axis");
+      graph = new Rickshaw.Graph(_.extend(this.graphArgs, {
+        element: chart[0][0],
+        series: series
+      }));
+      x_axis = new Rickshaw.Graph.Axis.Time(_.extend(this.xAxisArgs, {
+        graph: graph
+      }));
+      y_axis = new Rickshaw.Graph.Axis.Y(_.extend(this.yAxisArgs, {
+        graph: graph,
+        element: yAxis[0][0]
+      }));
+      hoverDetail = new Rickshaw.Graph.HoverDetail(_.extend(this.hoverArgs, {
+        graph: graph
+      }));
+      return graph.render();
+    };
+
+    RickshawRenderer.prototype.colorFor = function(seriesName) {
+      var _base;
+
+      this.colorCache || (this.colorCache = {});
+      return (_base = this.colorCache)[seriesName] || (_base[seriesName] = this.palette.color());
+    };
+
+    RickshawRenderer.prototype.extractArgs = function(args) {
+      this.colorScheme = args.palette || args.colorScheme || this.colorScheme || "munin";
+      this.graphArgs = _.defaults(args.graph || {}, {
+        width: 300,
+        height: 300,
+        renderer: 'line'
+      });
+      this.xAxisArgs = args.xAxis || {};
+      this.yAxisArgs = _.defaults(args.yAxis || {}, {
+        orientation: 'left',
+        tickFormat: Rickshaw.Fixtures.Number.formatKMBT
+      });
+      return this.hoverArgs = args.hover || {};
+    };
+
+    RickshawRenderer.prototype.keyToDate = function(keyStr) {
+      var dateStr;
+
+      dateStr = "" + keyStr.slice(0, 4) + "-" + keyStr.slice(4, 6) + "-" + keyStr.slice(6, 8);
+      return moment(dateStr);
+    };
+
+    return RickshawRenderer;
+
+  })();
+
+  (_base = this.Wonkavision).renderers || (_base.renderers = {});
+
+  this.Wonkavision.renderers.Rickshaw = RickshawRenderer;
+
+}).call(this);
+
+(function() {
   var PivotTableView;
 
   this.Wonkavision.PivotTableView = PivotTableView = (function() {
@@ -1198,19 +1284,14 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.extractArgs(options);
     }
 
-    PivotTableView.prototype.colorFor = function(seriesName) {
-      var _base;
-
-      this.colorCache || (this.colorCache = {});
-      return (_base = this.colorCache)[seriesName] || (_base[seriesName] = this.palette.color());
-    };
-
     PivotTableView.prototype.render = function(args) {
       this.extractArgs(args);
-      this.pivot = this.viewType === "text" ? new Wonkavision.PivotTable(this.data, args) : new Wonkavision.ChartTable(this.data, args);
-      this.palette = new Rickshaw.Color.Palette({
-        scheme: this.colorScheme
-      });
+      if (this.viewType === "text") {
+        this.pivot = new Wonkavision.PivotTable(this.data, args);
+      } else {
+        this.pivot = new Wonkavision.ChartTable(this.data, args);
+        this.renderer = new Wonkavision.renderers.Rickshaw(this, args);
+      }
       this.rows = this.pivot.rows.members.nonEmpty();
       this.columns = this.pivot.columns.members.nonEmpty();
       this.format = d3.format(this.cellFormat);
@@ -1225,18 +1306,6 @@ OTHER DEALINGS IN THE SOFTWARE.
       if (args.element) {
         this.element = d3.selectAll(args.element);
       }
-      this.colorScheme = args.palette || args.colorScheme || this.colorScheme || "munin";
-      this.graphArgs = _.defaults(args.graph || {}, {
-        width: 300,
-        height: 300,
-        renderer: 'line'
-      });
-      this.xAxisArgs = args.xAxis || {};
-      this.yAxisArgs = _.defaults(args.yAxis || {}, {
-        orientation: 'left',
-        tickFormat: Rickshaw.Fixtures.Number.formatKMBT
-      });
-      this.hoverArgs = args.hover || {};
       return this.viewType = args.viewType || args.view || this.detectViewType(args);
     };
 
@@ -1308,34 +1377,10 @@ OTHER DEALINGS IN THE SOFTWARE.
     };
 
     PivotTableView.prototype.renderGraph = function(data, idx, cell) {
-      var chart, container, graph, hoverDetail, x_axis, yAxis, y_axis,
-        _this = this;
+      var container;
 
-      _.map(data, function(series) {
-        series.color = _this.colorFor(series.name);
-        return _.map(series.data, function(point) {
-          point.x = _this.keyToDate(point.x).unix();
-          return point.y = parseFloat(point.y) || 0;
-        });
-      });
       container = d3.select(cell).append("div").attr("class", "wv-chart-container");
-      chart = container.append("div").attr("class", "wv-chart");
-      yAxis = container.append("div").attr("class", "wv-y-axis");
-      graph = new Rickshaw.Graph(_.extend(this.graphArgs, {
-        element: chart[0][0],
-        series: data
-      }));
-      x_axis = new Rickshaw.Graph.Axis.Time(_.extend(this.xAxisArgs, {
-        graph: graph
-      }));
-      y_axis = new Rickshaw.Graph.Axis.Y(_.extend(this.yAxisArgs, {
-        graph: graph,
-        element: yAxis[0][0]
-      }));
-      hoverDetail = new Rickshaw.Graph.HoverDetail(_.extend(this.hoverArgs, {
-        graph: graph
-      }));
-      return graph.render();
+      return this.renderer.renderGraph(data, container);
     };
 
     PivotTableView.prototype.detectViewType = function(args) {
@@ -1344,13 +1389,6 @@ OTHER DEALINGS IN THE SOFTWARE.
       } else {
         return "text";
       }
-    };
-
-    PivotTableView.prototype.keyToDate = function(keyStr) {
-      var dateStr;
-
-      dateStr = "" + keyStr.slice(0, 4) + "-" + keyStr.slice(4, 6) + "-" + keyStr.slice(6, 8);
-      return moment(dateStr);
     };
 
     return PivotTableView;
