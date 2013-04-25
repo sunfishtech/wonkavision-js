@@ -29,6 +29,7 @@ bundle 'wonkavision.js' do
   file 'cellset/cell.js'
   file 'cellset.js'
   file 'vizualization/rickshaw.wv.js'
+  file 'vizualization/highcharts.wv.js'
   file 'vizualization/pivot_table_view.js'
 end
 

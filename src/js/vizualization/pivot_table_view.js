@@ -13,7 +13,7 @@
         this.pivot = new Wonkavision.PivotTable(this.data, args);
       } else {
         this.pivot = new Wonkavision.ChartTable(this.data, args);
-        this.renderer = new Wonkavision.renderers.Rickshaw(this, args);
+        this.renderer = new Wonkavision.renderers.Highcharts(this, args);
       }
       this.rows = this.pivot.rows.members.nonEmpty();
       this.columns = this.pivot.columns.members.nonEmpty();

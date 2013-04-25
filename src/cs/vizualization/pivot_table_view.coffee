@@ -10,7 +10,7 @@ this.Wonkavision.PivotTableView = class PivotTableView
       @pivot = new Wonkavision.PivotTable(@data, args)
     else
       @pivot = new Wonkavision.ChartTable(@data, args)
-      @renderer = new Wonkavision.renderers.Rickshaw(this, args)
+      @renderer = new Wonkavision.renderers.Highcharts(this, args)
 
     @rows = @pivot.rows.members.nonEmpty()
     @columns = @pivot.columns.members.nonEmpty()
