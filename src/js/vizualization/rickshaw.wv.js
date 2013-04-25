@@ -20,7 +20,7 @@
           color: _this.colorFor(series.name),
           data: _.map(series.data, function(point) {
             return {
-              x: _this.keyToDate(point.x).unix(),
+              x: _this.keyToDate(point.x),
               y: parseFloat(point.y) || 0
             };
           })
@@ -71,7 +71,7 @@
       var dateStr;
 
       dateStr = "" + keyStr.slice(0, 4) + "-" + keyStr.slice(4, 6) + "-" + keyStr.slice(6, 8);
-      return moment(dateStr);
+      return moment(dateStr).unix();
     };
 
     return RickshawRenderer;

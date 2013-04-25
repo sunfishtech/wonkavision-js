@@ -13,7 +13,6 @@
         this.pivot = new Wonkavision.PivotTable(this.data, args);
       } else {
         this.pivot = new Wonkavision.ChartTable(this.data, args);
-        this.renderer = new Wonkavision.renderers.Highcharts(this, args);
       }
       this.rows = this.pivot.rows.members.nonEmpty();
       this.columns = this.pivot.columns.members.nonEmpty();
@@ -29,7 +28,15 @@
       if (args.element) {
         this.element = d3.selectAll(args.element);
       }
-      return this.viewType = args.viewType || args.view || this.detectViewType(args);
+      this.viewType = args.viewType || args.view || this.detectViewType(args);
+      return this.renderer = this.createRenderer(args);
+    };
+
+    PivotTableView.prototype.createRenderer = function(args) {
+      var rendererClass;
+
+      rendererClass = args.renderer || Wonkavision.renderers["default"] || Wonkavision.renderers.Rickshaw;
+      return new rendererClass(this, args);
     };
 
     PivotTableView.prototype.memberSpan = function(member) {

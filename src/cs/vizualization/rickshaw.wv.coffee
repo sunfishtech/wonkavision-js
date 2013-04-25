@@ -9,7 +9,7 @@ class RickshawRenderer
       name:series.name
       color:@colorFor(series.name)
       data: _.map series.data, (point) =>
-        x:@keyToDate(point.x).unix()
+        x:@keyToDate(point.x)
         y:parseFloat(point.y) || 0
     
     chart = container.append("div")
@@ -63,7 +63,7 @@ class RickshawRenderer
 
   keyToDate : (keyStr) ->
     dateStr = "#{keyStr[0..3]}-#{keyStr[4..5]}-#{keyStr[6..7]}"
-    moment(dateStr)
+    moment(dateStr).unix()
 
 this.Wonkavision.renderers ||= {}
 this.Wonkavision.renderers.Rickshaw = RickshawRenderer

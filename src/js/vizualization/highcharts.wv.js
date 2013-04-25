@@ -8,49 +8,30 @@
     }
 
     HighchartsRenderer.prototype.renderGraph = function(data, container) {
-      var chart, hc, series,
+      var chart, chartArgs, hc, series,
         _this = this;
 
       series = _.map(data, function(series) {
         return {
           name: series.name,
           data: _.map(series.data, function(point) {
-            return [_this.keyToDate(point.x).unix() * 1000, parseFloat(point.y) || 0];
+            return [_this.keyToDate(point.x), parseFloat(point.y) || 0];
           })
         };
       });
       chart = container.append("div").attr("class", "wv-chart");
-      return hc = new Highcharts.Chart({
-        credits: {
-          enabled: false
-        },
-        exporting: false,
-        rangeSelector: {
-          selected: 0
-        },
-        chart: _.extend(this.chartArgs, {
+      chartArgs = _.extend(this.chartArgs, {
+        series: series,
+        chart: _.extend(this.chartArgs.chart, {
           renderTo: chart[0][0]
-        }),
-        title: false,
-        yAxis: this.yAxisArgs,
-        xAxis: this.xAxisArgs,
-        plotOptions: {
-          series: {
-            animation: false
-          },
-          line: {
-            marker: {
-              enabled: false
-            },
-            shadow: false
-          }
-        },
-        series: series
+        })
       });
+      return hc = new Highcharts.Chart(chartArgs);
     };
 
     HighchartsRenderer.prototype.extractArgs = function(args) {
-      this.chartArgs = _.defaults(args.chart || {}, {
+      this.chartArgs = args.highchart || {};
+      this.chartArgs.chart = _.defaults(this.chartArgs.chart || {}, {
         borderWidth: 1,
         borderColor: "#CCC",
         type: "line",
@@ -58,20 +39,16 @@
         spacingBottom: 10,
         spacingTop: 10
       });
-      this.xAxisArgs = _.defaults(args.xAxis || {}, {
+      return this.chartArgs.xAxis = _.defaults(this.chartArgs.xAxis || {}, {
         type: 'datetime'
       });
-      this.yAxisArgs = _.defaults(args.yAxis || {}, {
-        min: 0
-      });
-      return this.hoverArgs = args.hover || {};
     };
 
     HighchartsRenderer.prototype.keyToDate = function(keyStr) {
       var dateStr;
 
       dateStr = "" + keyStr.slice(0, 4) + "-" + keyStr.slice(4, 6) + "-" + keyStr.slice(6, 8);
-      return moment(dateStr);
+      return moment(dateStr).unix() * 1000;
     };
 
     return HighchartsRenderer;

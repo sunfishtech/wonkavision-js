@@ -10,7 +10,6 @@ this.Wonkavision.PivotTableView = class PivotTableView
       @pivot = new Wonkavision.PivotTable(@data, args)
     else
       @pivot = new Wonkavision.ChartTable(@data, args)
-      @renderer = new Wonkavision.renderers.Highcharts(this, args)
 
     @rows = @pivot.rows.members.nonEmpty()
     @columns = @pivot.columns.members.nonEmpty()
@@ -23,6 +22,11 @@ this.Wonkavision.PivotTableView = class PivotTableView
     @data = args.data if args.data
     @element = d3.selectAll(args.element) if args.element
     @viewType = args.viewType || args.view || @detectViewType(args)
+    @renderer = @createRenderer(args)
+
+  createRenderer : (args) ->
+    rendererClass = args.renderer || Wonkavision.renderers["default"] || Wonkavision.renderers.Rickshaw
+    new rendererClass(this, args)
   
   memberSpan : (member) -> member.members?.nonEmpty().leaves().length
     
