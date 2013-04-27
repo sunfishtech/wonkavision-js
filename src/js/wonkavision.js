@@ -32,6 +32,9 @@
           var response;
 
           response = raw ? data : new Wonkavision.Cellset(data.json, query);
+          if (response.error != null) {
+            options.error(repsonse);
+          }
           return options.success(response);
         };
         error = options.error || function() {};

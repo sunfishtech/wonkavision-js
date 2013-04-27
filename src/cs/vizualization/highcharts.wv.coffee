@@ -27,6 +27,9 @@ class HighchartsRenderer
       spacingBottom:10
       spacingTop:10
 
+    @chartArgs.tooltip = _.defaults @chartArgs.tooltip || {},
+      shared:true
+
     @chartArgs.plotOptions = _.extend @chartArgs.plotOptions || {},
       series: _.defaults @chartArgs.plotOptions?.series || {},
         animation:false

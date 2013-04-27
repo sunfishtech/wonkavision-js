@@ -29,7 +29,9 @@
         this.element = d3.selectAll(args.element);
       }
       this.viewType = args.viewType || args.view || this.detectViewType(args);
-      return this.renderer = this.createRenderer(args);
+      if (this.viewType !== "text") {
+        return this.renderer = this.createRenderer(args);
+      }
     };
 
     PivotTableView.prototype.createRenderer = function(args) {

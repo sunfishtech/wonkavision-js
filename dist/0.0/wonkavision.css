@@ -27,3 +27,7 @@
 .wv-row-header {
     vertical-align: top; text-align:right;
 }
+
+.wv-pivot-table {
+    width:100%;
+}

@@ -81,8 +81,13 @@
       var axisName, f, query, _i, _len, _ref;
 
       query = {
-        measures: this.selectedMeasures.join(this.listDelimiter),
-        filters: ((function() {
+        from: this.cubeName
+      };
+      if (!(this.selectedMeasures.length < 1)) {
+        query.measures = this.selectedMeasures.join(this.listDelimiter);
+      }
+      if (!(this.filters.length < 1)) {
+        query.filters = ((function() {
           var _i, _len, _ref, _results;
 
           _ref = this.filters;
@@ -92,8 +97,8 @@
             _results.push(f.toString());
           }
           return _results;
-        }).call(this)).join(this.listDelimiter)
-      };
+        }).call(this)).join(this.listDelimiter);
+      }
       _ref = Wonkavision.AXIS_NAMES;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         axisName = _ref[_i];
@@ -101,6 +106,7 @@
           query[axisName] = this.getAxis(axisName).join(this.listDelimiter);
         }
       }
+      query["from"] = this.cubeName;
       return query;
     };
 

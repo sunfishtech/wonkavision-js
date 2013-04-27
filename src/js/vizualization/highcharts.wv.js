@@ -40,6 +40,9 @@
         spacingBottom: 10,
         spacingTop: 10
       });
+      this.chartArgs.tooltip = _.defaults(this.chartArgs.tooltip || {}, {
+        shared: true
+      });
       this.chartArgs.plotOptions = _.extend(this.chartArgs.plotOptions || {}, {
         series: _.defaults(((_ref = this.chartArgs.plotOptions) != null ? _ref.series : void 0) || {}, {
           animation: false

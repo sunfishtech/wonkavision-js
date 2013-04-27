@@ -34,10 +34,11 @@ this.Wonkavision.Query = class Query
     this
 
   toParams : ->
-    query =
-      measures: @selectedMeasures.join(@listDelimiter)
-      filters: (f.toString() for f in @filters).join(@listDelimiter)
+    query = from: @cubeName
+    query.measures = @selectedMeasures.join(@listDelimiter) unless @selectedMeasures.length < 1
+    query.filters = (f.toString() for f in @filters).join(@listDelimiter) unless @filters.length < 1
     query[axisName] = @getAxis(axisName).join(@listDelimiter) for axisName in Wonkavision.AXIS_NAMES when @getAxis(axisName)
+    query["from"] = @cubeName
     query
 
   toString : -> toHash().toString()

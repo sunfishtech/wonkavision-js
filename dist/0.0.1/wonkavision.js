@@ -57,6 +57,9 @@ OTHER DEALINGS IN THE SOFTWARE.
           var response;
 
           response = raw ? data : new Wonkavision.Cellset(data.json, query);
+          if (response.error != null) {
+            options.error(repsonse);
+          }
           return options.success(response);
         };
         error = options.error || function() {};
@@ -351,8 +354,13 @@ OTHER DEALINGS IN THE SOFTWARE.
       var axisName, f, query, _i, _len, _ref;
 
       query = {
-        measures: this.selectedMeasures.join(this.listDelimiter),
-        filters: ((function() {
+        from: this.cubeName
+      };
+      if (!(this.selectedMeasures.length < 1)) {
+        query.measures = this.selectedMeasures.join(this.listDelimiter);
+      }
+      if (!(this.filters.length < 1)) {
+        query.filters = ((function() {
           var _i, _len, _ref, _results;
 
           _ref = this.filters;
@@ -362,8 +370,8 @@ OTHER DEALINGS IN THE SOFTWARE.
             _results.push(f.toString());
           }
           return _results;
-        }).call(this)).join(this.listDelimiter)
-      };
+        }).call(this)).join(this.listDelimiter);
+      }
       _ref = Wonkavision.AXIS_NAMES;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         axisName = _ref[_i];
@@ -371,6 +379,7 @@ OTHER DEALINGS IN THE SOFTWARE.
           query[axisName] = this.getAxis(axisName).join(this.listDelimiter);
         }
       }
+      query["from"] = this.cubeName;
       return query;
     };
 
@@ -1039,7 +1048,9 @@ OTHER DEALINGS IN THE SOFTWARE.
   this.Wonkavision.Measure = Measure = (function() {
     function Measure(data) {
       this.name = data.name;
-      this.value = data.value;
+      if (data.value != null) {
+        this.value = parseFloat(data.value);
+      }
       this.formattedValue = data.formatted_value || this.value.toString();
       this.calculated = data.calculated || false;
       this.empty = !this.value;
@@ -1317,6 +1328,9 @@ OTHER DEALINGS IN THE SOFTWARE.
         spacingBottom: 10,
         spacingTop: 10
       });
+      this.chartArgs.tooltip = _.defaults(this.chartArgs.tooltip || {}, {
+        shared: true
+      });
       this.chartArgs.plotOptions = _.extend(this.chartArgs.plotOptions || {}, {
         series: _.defaults(((_ref = this.chartArgs.plotOptions) != null ? _ref.series : void 0) || {}, {
           animation: false
@@ -1405,7 +1419,9 @@ OTHER DEALINGS IN THE SOFTWARE.
         this.element = d3.selectAll(args.element);
       }
       this.viewType = args.viewType || args.view || this.detectViewType(args);
-      return this.renderer = this.createRenderer(args);
+      if (this.viewType !== "text") {
+        return this.renderer = this.createRenderer(args);
+      }
     };
 
     PivotTableView.prototype.createRenderer = function(args) {

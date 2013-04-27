@@ -22,7 +22,7 @@ this.Wonkavision.PivotTableView = class PivotTableView
     @data = args.data if args.data
     @element = d3.selectAll(args.element) if args.element
     @viewType = args.viewType || args.view || @detectViewType(args)
-    @renderer = @createRenderer(args)
+    @renderer = @createRenderer(args) if @viewType != "text"
 
   createRenderer : (args) ->
     rendererClass = args.renderer || Wonkavision.renderers["default"] || Wonkavision.renderers.Rickshaw
