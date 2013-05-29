@@ -71,7 +71,7 @@ OTHER DEALINGS IN THE SOFTWARE.
         var uri;
 
         uri = this.url + (this.url.substr(-1) === "/" ? "" : "/");
-        uri = this.url + path;
+        uri = uri + path;
         return Wonkavision.Remote.get(uri, {
           data: params,
           success: success,
