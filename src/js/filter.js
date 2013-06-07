@@ -33,7 +33,7 @@
         delim = "::";
       }
       parts = filterString.split(delim);
-      if (parts[0] === "dimension" || parts[0] === "measure") {
+      if (parts[0] === "dimension" || parts[0] === "measure" || parts[0] === "fact") {
         this.memberType = parts.shift();
         this.name = parts.shift();
       } else {

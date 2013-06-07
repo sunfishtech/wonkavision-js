@@ -14,7 +14,7 @@ this.Wonkavision.Filter = class Filter
 
   parse : (filterString, delim = "::") ->
     parts = filterString.split(delim)
-    if parts[0] == "dimension" || parts[0] == "measure"
+    if parts[0] == "dimension" || parts[0] == "measure" || parts[0] == "fact"
       @memberType = parts.shift()
       @name = parts.shift()
     else
