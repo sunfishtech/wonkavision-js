@@ -10,6 +10,4 @@ this.Wonkavision.Axis = class Axis
       
     @endIndex = @startIndex + @dimensions.length - 1
 
-  dimensionNames : ->
-    d.name for d in this.dimensions
-
+ 

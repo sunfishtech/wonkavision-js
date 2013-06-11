@@ -475,9 +475,11 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.axes = _.map(this.cellset.axes, function(axis) {
         return _this[axis.name] = new PivotTable.Axis(axis.name, axis.dimensions.slice(0), _this);
       });
-      this.measuresAxis = options.measuresAxis || options.measuresOn || "columns";
+      this.measuresAxis = options.measuresAxis || options.measuresOn;
+      this.measuresAxis || (this.measuresAxis = this.isFlat ? "rows" : "columns");
       this.initializeAxes();
       this.seriesCells = {};
+      this.isFlat = this.axes.length < 2 ? true : false;
       _ref = this.cellset.cells;
       for (key in _ref) {
         cell = _ref[key];
@@ -496,9 +498,6 @@ OTHER DEALINGS IN THE SOFTWARE.
         if ((_ref2 = this[this.measuresAxis]) != null) {
           _ref2.appendMeasures();
         }
-      }
-      if (!((this.rows != null) && !this.rows.isEmpty)) {
-        this.pivot();
       }
     }
 
@@ -527,7 +526,9 @@ OTHER DEALINGS IN THE SOFTWARE.
         _this = this;
 
       rowMember = _.isArray(rowMemberOrMembers) ? _.last(rowMemberOrMembers) : rowMemberOrMembers;
-      if (this.columns && !this.columns.isEmpty) {
+      if (this.isFlat && this.measuresAxis === "rows") {
+        return this.extractMeasures([rowMember]);
+      } else if (this.columns && !this.columns.isEmpty) {
         return _.map(this.columns.members.nonEmpty().leaves(), function(colMember) {
           return _this.cellValue(rowMember, colMember);
         });
@@ -556,6 +557,29 @@ OTHER DEALINGS IN THE SOFTWARE.
         measureName = measureName || this.findMeasureName(keyMembers) || this.cellset.measureNames[0];
         return cell[measureName].value;
       }
+    };
+
+    PivotTable.prototype.extractMeasures = function(keyMembers, formatted) {
+      var cell, cellKey;
+
+      if (formatted == null) {
+        formatted = true;
+      }
+      cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), function(m) {
+        return m.keyIndex;
+      }), function(m) {
+        return m.cellKey();
+      }));
+      cell = this.cellset.cells[cellKey];
+      return _.map(this.cellset.measureNames, function(m) {
+        if (cell != null) {
+          if (formatted) {
+            return cell[m].formattedValue;
+          } else {
+            return cell[m].value;
+          }
+        }
+      });
     };
 
     PivotTable.prototype.findMeasureName = function(keyMembers) {
@@ -1024,18 +1048,6 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.endIndex = this.startIndex + this.dimensions.length - 1;
     }
 
-    Axis.prototype.dimensionNames = function() {
-      var d, _i, _len, _ref, _results;
-
-      _ref = this.dimensions;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        d = _ref[_i];
-        _results.push(d.name);
-      }
-      return _results;
-    };
-
     return Axis;
 
   })();
@@ -1047,11 +1059,13 @@ OTHER DEALINGS IN THE SOFTWARE.
 
   this.Wonkavision.Measure = Measure = (function() {
     function Measure(data) {
+      var _ref;
+
       this.name = data.name;
       if (data.value != null) {
         this.value = parseFloat(data.value);
       }
-      this.formattedValue = data.formatted_value || this.value.toString();
+      this.formattedValue = data.formatted_value || ((_ref = this.value) != null ? _ref.toString() : void 0);
       this.calculated = data.calculated || false;
       this.empty = !this.value;
     }
@@ -1398,20 +1412,23 @@ OTHER DEALINGS IN THE SOFTWARE.
     }
 
     PivotTableView.prototype.render = function(args) {
+      var _ref, _ref1;
+
       this.extractArgs(args);
       if (this.viewType === "text") {
         this.pivot = new Wonkavision.PivotTable(this.data, args);
       } else {
         this.pivot = new Wonkavision.ChartTable(this.data, args);
       }
-      this.rows = this.pivot.rows.members.nonEmpty();
-      this.columns = this.pivot.columns.members.nonEmpty();
-      this.format = d3.format(this.cellFormat);
+      if (this.pivot.isFlat) {
+        this.pivot.pivot();
+      }
+      this.rows = ((_ref = this.pivot.rows) != null ? _ref.members.nonEmpty() : void 0) || [];
+      this.columns = ((_ref1 = this.pivot.columns) != null ? _ref1.members.nonEmpty() : void 0) || [];
       return this.element.append("table").attr("class", "wv-pivot-table").call(this.renderTable);
     };
 
     PivotTableView.prototype.extractArgs = function(args) {
-      this.cellFormat = args.cellFormat || this.cellFormat || ",.1f";
       if (args.data) {
         this.data = args.data;
       }
@@ -1420,8 +1437,18 @@ OTHER DEALINGS IN THE SOFTWARE.
       }
       this.viewType = args.viewType || args.view || this.detectViewType(args);
       if (this.viewType !== "text") {
-        return this.renderer = this.createRenderer(args);
+        this.renderer = this.createRenderer(args);
       }
+      this.formatLabel = args.formatLabel || function(l) {
+        return l;
+      };
+      return this.formatData = args.formatData || (function(d) {
+        if (d != null) {
+          return d;
+        } else {
+          return "-";
+        }
+      });
     };
 
     PivotTableView.prototype.createRenderer = function(args) {
@@ -1439,30 +1466,40 @@ OTHER DEALINGS IN THE SOFTWARE.
 
     PivotTableView.prototype.renderTable = function(tableSelection) {
       this.table = tableSelection;
-      if ((this.pivot.columns != null) && !this.pivot.columns.isEmpty) {
-        this.table.call(this.renderColumnHeaders);
-      }
+      this.table.call(this.renderColumnHeaders);
       return this.table.call(this.renderTableData);
     };
 
     PivotTableView.prototype.renderColumnHeaders = function(tableSelection) {
-      var ch, chr, colMembers, fillSpan, thead,
+      var ch, chr, colMembers, colnames, fillSpan, hrow, thead,
         _this = this;
 
-      colMembers = this.columns.partitionV();
-      thead = tableSelection.append("thead");
-      chr = thead.selectAll("tr.wv-col").data(colMembers).enter().append("tr").attr("class", "wv-col");
-      fillSpan = this.pivot.rows.dimensions.length + (this.pivot.measuresAxis === "rows" ? 1 : 0);
-      chr.append("th").attr("colspan", fillSpan);
-      return ch = chr.selectAll("td.wv-col-header").data((function(d) {
-        return d;
-      }), function(d) {
-        return d.key.toString();
-      }).enter().append("th").text(function(level) {
-        return level.caption;
-      }).attr("colspan", function(d) {
-        return _this.memberSpan(d);
-      }).attr("class", "wv-col-header");
+      if (this.pivot.isFlat && this.pivot.measuresAxis === "rows") {
+        colnames = _.map(this.pivot.axes[0].dimensions, function(dim) {
+          return dim.name;
+        });
+        colnames = colnames.concat(this.pivot.cellset.measureNames);
+        thead = tableSelection.append("thead");
+        hrow = thead.append("tr").attr("class", "wv-col");
+        return hrow.selectAll("th.wv-col-header").data(colnames).enter().append("th").text(function(name) {
+          return _this.formatLabel(name);
+        });
+      } else {
+        colMembers = this.columns.partitionV();
+        thead = tableSelection.append("thead");
+        chr = thead.selectAll("tr.wv-col").data(colMembers).enter().append("tr").attr("class", "wv-col");
+        fillSpan = this.pivot.rows.dimensions.length + (this.pivot.measuresAxis === "rows" ? 1 : 0);
+        chr.append("th").attr("colspan", fillSpan);
+        return ch = chr.selectAll("td.wv-col-header").data((function(d) {
+          return d;
+        }), function(d) {
+          return d.key.toString();
+        }).enter().append("th").text(function(level) {
+          return _this.formatLabel(level.caption);
+        }).attr("colspan", function(d) {
+          return _this.memberSpan(d);
+        }).attr("class", "wv-col-header");
+      }
     };
 
     PivotTableView.prototype.renderTableData = function(tableSelection) {
@@ -1477,7 +1514,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       }), function(d) {
         return d.key.toString();
       }).enter().append("th").text(function(level) {
-        return level.caption;
+        return _this.formatLabel(level.caption);
       }).attr("rowspan", function(d) {
         return _this.memberSpan(d);
       }).attr("class", "wv-row-header");
@@ -1485,11 +1522,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       cell = rhr.selectAll("td.wv-cell").data(this.pivot.cellValues).enter().append("td").attr("class", "wv-cell");
       if (this.viewType === "text") {
         return cell.text(function(d) {
-          if (d != null) {
-            return self.format(d);
-          } else {
-            return "-";
-          }
+          return _this.formatData(d);
         });
       } else {
         return cell.each(function(data, idx) {

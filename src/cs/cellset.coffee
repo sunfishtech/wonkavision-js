@@ -32,5 +32,12 @@ this.Wonkavision.Cellset = class Cellset
     coords = if coord? then coord.toString() else coord for coord in arguments
     @cells[coords] || new Cell(this)
 
+ 
+
+    
+
+
+
+
 
      

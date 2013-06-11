@@ -4,9 +4,12 @@ this.Wonkavision.PivotTable = class PivotTable
 
     @axes = _.map @cellset.axes, (axis) =>
       this[axis.name] = new PivotTable.Axis(axis.name, axis.dimensions.slice(0), this)
-    @measuresAxis = options.measuresAxis || options.measuresOn || "columns"
+    @measuresAxis = options.measuresAxis || options.measuresOn
+    @measuresAxis ||= if @isFlat then "rows" else "columns"
+
     @initializeAxes()
     @seriesCells = {}
+    @isFlat = if @axes.length < 2 then true else false
 
     for key, cell of @cellset.cells
       axis.registerCell(cell) for axis in @axes
@@ -15,10 +18,8 @@ this.Wonkavision.PivotTable = class PivotTable
         sc = (@seriesCells[skey] ||= [])
         sc.push cell
 
+    
     this[@measuresAxis]?.appendMeasures() if @measuresAxis?  
-
-    #for display purposes, single axis queries render using rows
-    @pivot() unless @rows? && !@rows.isEmpty
 
   initializeAxes : -> axis.initialize() for axis in @axes
 
@@ -29,20 +30,30 @@ this.Wonkavision.PivotTable = class PivotTable
 
   cellValues : (rowMemberOrMembers) ->
     rowMember = if _.isArray(rowMemberOrMembers) then _.last(rowMemberOrMembers) else rowMemberOrMembers
-    if @columns && !@columns.isEmpty
+    if @isFlat && @measuresAxis == "rows"
+        @extractMeasures( [rowMember] ) 
+    else if @columns && !@columns.isEmpty
       _.map @columns.members.nonEmpty().leaves(), (colMember) =>
         @cellValue( rowMember, colMember )
     else
       [ @cellValue( rowMember ) ]
+      
 
   cellValue : (keyMembers...) -> @extractValue(keyMembers)
-    
+
   extractValue : (keyMembers, measureName) ->
     cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), (m) -> m.keyIndex), (m) -> m.cellKey()))
     cell = @cellset.cells[cellKey]
     if cell?
       measureName = measureName || @findMeasureName(keyMembers) || @cellset.measureNames[0]
       cell[measureName].value
+
+  extractMeasures : (keyMembers, formatted = true) ->
+    cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), (m) -> m.keyIndex), (m) -> m.cellKey()))
+    cell = @cellset.cells[cellKey]
+    _.map @cellset.measureNames, (m) ->
+      if cell?
+        if formatted then cell[m].formattedValue else cell[m].value
 
   findMeasureName : (keyMembers) ->
     _.find( keyMembers, (m) -> m?.measureName? )?.measureName

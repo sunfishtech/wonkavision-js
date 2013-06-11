@@ -17,9 +17,11 @@
       this.axes = _.map(this.cellset.axes, function(axis) {
         return _this[axis.name] = new PivotTable.Axis(axis.name, axis.dimensions.slice(0), _this);
       });
-      this.measuresAxis = options.measuresAxis || options.measuresOn || "columns";
+      this.measuresAxis = options.measuresAxis || options.measuresOn;
+      this.measuresAxis || (this.measuresAxis = this.isFlat ? "rows" : "columns");
       this.initializeAxes();
       this.seriesCells = {};
+      this.isFlat = this.axes.length < 2 ? true : false;
       _ref = this.cellset.cells;
       for (key in _ref) {
         cell = _ref[key];
@@ -38,9 +40,6 @@
         if ((_ref2 = this[this.measuresAxis]) != null) {
           _ref2.appendMeasures();
         }
-      }
-      if (!((this.rows != null) && !this.rows.isEmpty)) {
-        this.pivot();
       }
     }
 
@@ -69,7 +68,9 @@
         _this = this;
 
       rowMember = _.isArray(rowMemberOrMembers) ? _.last(rowMemberOrMembers) : rowMemberOrMembers;
-      if (this.columns && !this.columns.isEmpty) {
+      if (this.isFlat && this.measuresAxis === "rows") {
+        return this.extractMeasures([rowMember]);
+      } else if (this.columns && !this.columns.isEmpty) {
         return _.map(this.columns.members.nonEmpty().leaves(), function(colMember) {
           return _this.cellValue(rowMember, colMember);
         });
@@ -98,6 +99,29 @@
         measureName = measureName || this.findMeasureName(keyMembers) || this.cellset.measureNames[0];
         return cell[measureName].value;
       }
+    };
+
+    PivotTable.prototype.extractMeasures = function(keyMembers, formatted) {
+      var cell, cellKey;
+
+      if (formatted == null) {
+        formatted = true;
+      }
+      cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), function(m) {
+        return m.keyIndex;
+      }), function(m) {
+        return m.cellKey();
+      }));
+      cell = this.cellset.cells[cellKey];
+      return _.map(this.cellset.measureNames, function(m) {
+        if (cell != null) {
+          if (formatted) {
+            return cell[m].formattedValue;
+          } else {
+            return cell[m].value;
+          }
+        }
+      });
     };
 
     PivotTable.prototype.findMeasureName = function(keyMembers) {

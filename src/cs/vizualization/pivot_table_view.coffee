@@ -11,18 +11,23 @@ this.Wonkavision.PivotTableView = class PivotTableView
     else
       @pivot = new Wonkavision.ChartTable(@data, args)
 
-    @rows = @pivot.rows.members.nonEmpty()
-    @columns = @pivot.columns.members.nonEmpty()
-    @format = d3.format(@cellFormat)
+    #for flat queries, default should display measures on colums and dimensions on rows
+    @pivot.pivot() if @pivot.isFlat
+
+    @rows = @pivot.rows?.members.nonEmpty() || []
+    @columns = @pivot.columns?.members.nonEmpty() || []
+    #@format = d3.format(@cellFormat)
 
     @element.append("table").attr("class","wv-pivot-table").call(@renderTable)
 
   extractArgs : (args) ->
-    @cellFormat = args.cellFormat || @cellFormat || ",.1f"
+    #@cellFormat = args.cellFormat || @cellFormat || ",.1f"
     @data = args.data if args.data
     @element = d3.selectAll(args.element) if args.element
     @viewType = args.viewType || args.view || @detectViewType(args)
     @renderer = @createRenderer(args) if @viewType != "text"
+    @formatLabel = args.formatLabel || (l) -> l
+    @formatData = args.formatData || ((d) -> if d? then d else "-")
 
   createRenderer : (args) ->
     rendererClass = args.renderer || Wonkavision.renderers["default"] || Wonkavision.renderers.Rickshaw
@@ -32,26 +37,36 @@ this.Wonkavision.PivotTableView = class PivotTableView
     
   renderTable : (tableSelection) ->
     @table = tableSelection
-    if @pivot.columns? && !@pivot.columns.isEmpty
-      @table.call(@renderColumnHeaders)
+    #if @pivot.columns? && !@pivot.columns.isEmpty
+    @table.call(@renderColumnHeaders)
     @table.call(@renderTableData)
   
   renderColumnHeaders : (tableSelection) ->
-    colMembers = @columns.partitionV()
-    thead = tableSelection.append("thead")
-    chr = thead.selectAll("tr.wv-col")
-      .data(colMembers)
-      .enter()
-      .append("tr").attr("class", "wv-col")
+    if @pivot.isFlat && @pivot.measuresAxis == "rows"
+      colnames = _.map @pivot.axes[0].dimensions, (dim) -> dim.name
+      colnames = colnames.concat @pivot.cellset.measureNames
+      thead = tableSelection.append("thead")
+      hrow = thead.append("tr").attr("class","wv-col")
+      hrow.selectAll("th.wv-col-header")
+        .data(colnames)
+        .enter().append("th")
+        .text((name) => @formatLabel(name))
+    else
+      colMembers = @columns.partitionV()
+      thead = tableSelection.append("thead")
+      chr = thead.selectAll("tr.wv-col")
+        .data(colMembers)
+        .enter()
+        .append("tr").attr("class", "wv-col")
 
-    fillSpan = @pivot.rows.dimensions.length + if @pivot.measuresAxis == "rows" then 1 else 0
-    chr.append("th").attr("colspan", fillSpan)
-    ch = chr.selectAll("td.wv-col-header")
-      .data(((d) -> d), (d) -> d.key.toString())
-      .enter().append("th")
-      .text((level) -> level.caption)
-      .attr("colspan", (d) => @memberSpan(d))
-      .attr("class", "wv-col-header")
+      fillSpan = @pivot.rows.dimensions.length + if @pivot.measuresAxis == "rows" then 1 else 0
+      chr.append("th").attr("colspan", fillSpan)
+      ch = chr.selectAll("td.wv-col-header")
+        .data(((d) -> d), (d) -> d.key.toString())
+        .enter().append("th")
+        .text((level) => @formatLabel(level.caption))
+        .attr("colspan", (d) => @memberSpan(d))
+        .attr("class", "wv-col-header")
 
   renderTableData : (tableSelection) ->
     rowMembers = @rows.partitionH()
@@ -63,7 +78,7 @@ this.Wonkavision.PivotTableView = class PivotTableView
     rh = rhr.selectAll("th.wv-row-header")
       .data(((d) -> d), (d) -> d.key.toString())
       .enter().append("th")
-      .text((level) -> level.caption)
+      .text((level) => @formatLabel(level.caption))
       .attr("rowspan", (d) => @memberSpan(d))
       .attr("class","wv-row-header")
 
@@ -74,7 +89,7 @@ this.Wonkavision.PivotTableView = class PivotTableView
       .attr("class","wv-cell")
 
     if @viewType == "text"
-      cell.text((d) -> if d? then self.format(d) else "-")
+      cell.text((d) => @formatData(d))
     else
       cell.each((data, idx) -> self.renderGraph(data, idx, this))
 

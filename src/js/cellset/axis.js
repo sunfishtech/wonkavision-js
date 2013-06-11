@@ -21,18 +21,6 @@
       this.endIndex = this.startIndex + this.dimensions.length - 1;
     }
 
-    Axis.prototype.dimensionNames = function() {
-      var d, _i, _len, _ref, _results;
-
-      _ref = this.dimensions;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        d = _ref[_i];
-        _results.push(d.name);
-      }
-      return _results;
-    };
-
     return Axis;
 
   })();
