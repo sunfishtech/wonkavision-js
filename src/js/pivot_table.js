@@ -1,6 +1,5 @@
 (function() {
-  var Axis, ChartTable, MeasureMember, Member, MemberCollection, PivotTable,
-    __slice = [].slice,
+  var Axis, ChartCell, ChartTable, DataTable, MeasureMember, Member, MemberCollection, PivotTable, TableCell, TableRow,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -13,7 +12,6 @@
       if (options == null) {
         options = {};
       }
-      _.bindAll(this, "cellValues", "cellValue");
       this.axes = _.map(this.cellset.axes, function(axis) {
         return _this[axis.name] = new PivotTable.Axis(axis.name, axis.dimensions.slice(0), _this);
       });
@@ -63,73 +61,15 @@
       return this.columns = r;
     };
 
-    PivotTable.prototype.cellValues = function(rowMemberOrMembers) {
-      var rowMember,
-        _this = this;
+    PivotTable.prototype.createDataTable = function() {
+      return new DataTable(this);
+    };
 
-      rowMember = _.isArray(rowMemberOrMembers) ? _.last(rowMemberOrMembers) : rowMemberOrMembers;
-      if (this.isFlat && this.measuresAxis === "rows") {
-        return this.extractMeasures([rowMember]);
-      } else if (this.columns && !this.columns.isEmpty) {
-        return _.map(this.columns.members.nonEmpty().leaves(), function(colMember) {
-          return _this.cellValue(rowMember, colMember);
-        });
-      } else {
-        return [this.cellValue(rowMember)];
+    PivotTable.prototype.createCell = function(row, keyMembers, measureName) {
+      if (measureName == null) {
+        measureName = null;
       }
-    };
-
-    PivotTable.prototype.cellValue = function() {
-      var keyMembers;
-
-      keyMembers = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      return this.extractValue(keyMembers);
-    };
-
-    PivotTable.prototype.extractValue = function(keyMembers, measureName) {
-      var cell, cellKey;
-
-      cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), function(m) {
-        return m.keyIndex;
-      }), function(m) {
-        return m.cellKey();
-      }));
-      cell = this.cellset.cells[cellKey];
-      if (cell != null) {
-        measureName = measureName || this.findMeasureName(keyMembers) || this.cellset.measureNames[0];
-        return cell[measureName].value;
-      }
-    };
-
-    PivotTable.prototype.extractMeasures = function(keyMembers, formatted) {
-      var cell, cellKey;
-
-      if (formatted == null) {
-        formatted = true;
-      }
-      cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), function(m) {
-        return m.keyIndex;
-      }), function(m) {
-        return m.cellKey();
-      }));
-      cell = this.cellset.cells[cellKey];
-      return _.map(this.cellset.measureNames, function(m) {
-        if (cell != null) {
-          if (formatted) {
-            return cell[m].formattedValue;
-          } else {
-            return cell[m].value;
-          }
-        }
-      });
-    };
-
-    PivotTable.prototype.findMeasureName = function(keyMembers) {
-      var _ref;
-
-      return (_ref = _.find(keyMembers, function(m) {
-        return (m != null ? m.measureName : void 0) != null;
-      })) != null ? _ref.measureName : void 0;
+      return new TableCell(row, keyMembers, measureName);
     };
 
     return PivotTable;
@@ -143,7 +83,6 @@
       if (options == null) {
         options = {};
       }
-      _.bindAll(this, "cellValues", "cellValue");
       this.seriesSource = options.seriesSource || options.seriesFrom || (cellset.measureNames.length > 1 ? "measures" : "rows");
       ChartTable.__super__.constructor.call(this, cellset, options);
     }
@@ -157,35 +96,140 @@
       return ChartTable.__super__.initializeAxes.call(this);
     };
 
-    ChartTable.prototype.cellValue = function() {
-      var keyMembers, seriesMembers,
+    ChartTable.prototype.createCell = function(row, keyMembers, measureName) {
+      return new ChartCell(row, keyMembers);
+    };
+
+    return ChartTable;
+
+  })(PivotTable);
+
+  this.Wonkavision.PivotTable.DataTable = DataTable = (function() {
+    function DataTable(pivot) {
+      var _ref, _ref1,
         _this = this;
 
-      keyMembers = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      if (this.seriesSource === "measures") {
-        return _.map(this.cellset.measureNames, function(measureName) {
+      this.pivot = pivot;
+      this.rowMembers = (_ref = this.pivot.rows) != null ? _ref.members.nonEmpty().partitionH() : void 0;
+      this.columnMembers = (_ref1 = this.pivot.columns) != null ? _ref1.members.nonEmpty().partitionV() : void 0;
+      this.rows = [];
+      _.map(this.rowMembers, function(rm) {
+        return _this.addRow(rm);
+      });
+    }
+
+    DataTable.prototype.addRow = function(rowMember) {
+      return this.rows.push(this.createRow(rowMember));
+    };
+
+    DataTable.prototype.createRow = function(rowMemberOrMembers) {
+      return new TableRow(this, rowMemberOrMembers);
+    };
+
+    return DataTable;
+
+  })();
+
+  this.Wonkavision.PivotTable.TableRow = TableRow = (function() {
+    function TableRow(table, rowMembers) {
+      var _this = this;
+
+      this.table = table;
+      this.rowMembers = rowMembers;
+      this.pivot = this.table.pivot;
+      this.cells = [];
+      this.rowMember = _.isArray(this.rowMembers) ? _.last(this.rowMembers) : this.rowMembersr;
+      if (this.pivot.isFlat && this.pivot.measuresAxis === "rows") {
+        _.map(this.pivot.cellset.measureNames, function(m) {
+          return _this.addCell([_this.rowMember], m);
+        });
+      } else if (this.pivot.columns && !this.pivot.columns.isEmpty) {
+        _.map(this.pivot.columns.members.nonEmpty().leaves(), function(colMember) {
+          return _this.addCell([_this.rowMember, colMember]);
+        });
+      } else {
+        [this.addCell([this.rowMember])];
+      }
+    }
+
+    TableRow.prototype.addCell = function(keyMembers, measureName) {
+      return this.cells.push(this.pivot.createCell(this, keyMembers, measureName));
+    };
+
+    return TableRow;
+
+  })();
+
+  this.Wonkavision.PivotTable.TableCell = TableCell = (function() {
+    function TableCell(row, keyMembers, measureName) {
+      var _ref, _ref1, _ref2;
+
+      this.row = row;
+      this.keyMembers = keyMembers;
+      this.measureName = measureName;
+      this.pivot = this.row.pivot;
+      this.cell = this.cellFor(this.keyMembers);
+      this.measureName || (this.measureName = this.findMeasureName(this.keyMembers));
+      this.measure = (_ref = this.cell) != null ? _ref[this.measureName] : void 0;
+      this.value = (_ref1 = this.measure) != null ? _ref1.value : void 0;
+      this.formattedValue = (_ref2 = this.measure) != null ? _ref2.formattedValue : void 0;
+    }
+
+    TableCell.prototype.cellFor = function(keyMembers) {
+      var cellKey;
+
+      cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), function(m) {
+        return m.keyIndex;
+      }), function(m) {
+        return m.cellKey();
+      }));
+      return this.pivot.cellset.cells[cellKey];
+    };
+
+    TableCell.prototype.findMeasureName = function(keyMembers) {
+      var _ref;
+
+      return ((_ref = _.find(keyMembers, function(m) {
+        return (m != null ? m.measureName : void 0) != null;
+      })) != null ? _ref.measureName : void 0) || this.pivot.cellset.measureNames[0];
+    };
+
+    return TableCell;
+
+  })();
+
+  this.Wonkavision.PivotTable.ChartCell = ChartCell = (function() {
+    function ChartCell(row, keyMembers) {
+      var seriesMembers,
+        _this = this;
+
+      this.row = row;
+      this.keyMembers = keyMembers;
+      this.pivot = this.row.pivot;
+      if (this.pivot.seriesSource === "measures") {
+        this.series = _.map(this.pivot.cellset.measureNames, function(measureName) {
           return {
             name: measureName,
             data: _this.seriesFromMeasure(keyMembers, measureName)
           };
         });
-      } else if (this.seriesDimension != null) {
-        seriesMembers = _.filter(this.seriesDimension.members, function(m) {
-          return _this.seriesCells[m.key] != null;
+      } else if (this.pivot.seriesDimension != null) {
+        seriesMembers = _.filter(this.pivot.seriesDimension.members, function(m) {
+          return _this.pivot.seriesCells[m.key] != null;
         });
-        return _.map(seriesMembers, function(seriesMember) {
+        this.series = _.map(seriesMembers, function(seriesMember) {
           return {
             name: seriesMember.caption,
             data: _this.seriesFromMember(keyMembers, seriesMember)
           };
         });
       }
-    };
+    }
 
-    ChartTable.prototype.seriesFromMeasure = function(keyMembers, measureName) {
+    ChartCell.prototype.seriesFromMeasure = function(keyMembers, measureName) {
       var _this = this;
 
-      return _.map(this.xAxisDimension.members, function(x) {
+      return _.map(this.pivot.xAxisDimension.members, function(x) {
         var key, pivotMember, xMember;
 
         xMember = Member.fromDimensionMember(x);
@@ -193,31 +237,31 @@
         key = keyMembers.concat([pivotMember]);
         return {
           x: x.key,
-          y: _this.extractValue(key, measureName)
+          y: new TableCell(_this.row, key, measureName).value
         };
       });
     };
 
-    ChartTable.prototype.seriesFromMember = function(keyMembers, member) {
+    ChartCell.prototype.seriesFromMember = function(keyMembers, member) {
       var pivotMember,
         _this = this;
 
       pivotMember = Member.fromDimensionMember(member);
-      return _.map(this.xAxisDimension.members, function(x) {
+      return _.map(this.pivot.xAxisDimension.members, function(x) {
         var key, xMember;
 
         xMember = Member.fromDimensionMember(x);
         key = keyMembers.concat([pivotMember, xMember]);
         return {
           x: x.key,
-          y: _this.extractValue(key)
+          y: new TableCell(_this.row, key).value
         };
       });
     };
 
-    return ChartTable;
+    return ChartCell;
 
-  })(PivotTable);
+  })();
 
   this.Wonkavision.PivotTable.Axis = Axis = (function() {
     function Axis(name, dimensions, pivotTable) {

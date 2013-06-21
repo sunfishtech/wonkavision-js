@@ -1,5 +1,6 @@
 (function() {
-  var Filter;
+  var Filter,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   this.Wonkavision.Filter = Filter = (function() {
     function Filter(name, options) {
@@ -7,6 +8,7 @@
       if (options == null) {
         options = {};
       }
+      this.isFact = __bind(this.isFact, this);
       this.operator = options.operator || "eq";
       this.memberType = options.memberType || "dimension";
       this.value = options.value;
@@ -20,6 +22,10 @@
 
     Filter.prototype.isMeasure = function() {
       return this.memberType === "measure";
+    };
+
+    Filter.prototype.isFact = function() {
+      return this.memberType === "fact";
     };
 
     Filter.prototype.toString = function() {

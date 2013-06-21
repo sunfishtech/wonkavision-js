@@ -1,18 +1,17 @@
-this.Wonkavision.Filter = class Filter
+this.Wonkavision.MemberReference = class MemberReference
   constructor : (@name, options = {}) ->
-    @operator = options.operator || "eq"
     @memberType = options.memberType || "dimension"
     @value = options.value
     @attributeName = options.attributeName || if @isDimension then "key" else "count"
-    @operators = ["eq","ne","gt","gte","lt","lte","in","nin"]
+    @order = "asc"
 
   isDimension : -> @memberType == "dimension"
 
   isMeasure : -> @memberType == "measure"
 
-  isFact: => @memberType == "fact"
+  isFact : -> @membertype == "fact"
 
-  toString : -> [@memberType,@name,@attributeName,@operator,@value.toString()].join("::")
+  toString : -> [@memberType,@name,@attributeName,@order].join("::")
 
   parse : (filterString, delim = "::") ->
     parts = filterString.split(delim)
@@ -23,15 +22,11 @@ this.Wonkavision.Filter = class Filter
       @name = parts.shift()
 
     @attributeName = parts.shift() || @attributeName
-    @operator = parts.shift() || @operator
-    @value = parts.shift() || @value
+    @order = parts.shift() || @order
     this
 
-  withValue : (val) -> @value = val; this
-
-
-this.Wonkavision.Filter.parse = (filterString, delim = "::") ->
-  new Filter("").parse(filterString, delim)
+this.Wonkavision.MemberReference.parse = (filterString, delim = "::") ->
+  new MemberReference("").parse(filterString, delim)
 
       
 

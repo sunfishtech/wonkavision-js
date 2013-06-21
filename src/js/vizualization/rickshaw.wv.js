@@ -18,12 +18,7 @@
         return {
           name: series.name,
           color: _this.colorFor(series.name),
-          data: _.map(series.data, function(point) {
-            return {
-              x: _this.keyToDate(point.x),
-              y: parseFloat(point.y) || 0
-            };
-          })
+          data: series.data
         };
       });
       chart = container.append("div").attr("class", "wv-chart");
@@ -65,13 +60,6 @@
         tickFormat: Rickshaw.Fixtures.Number.formatKMBT
       });
       return this.hoverArgs = args.hover || {};
-    };
-
-    RickshawRenderer.prototype.keyToDate = function(keyStr) {
-      var dateStr;
-
-      dateStr = "" + keyStr.slice(0, 4) + "-" + keyStr.slice(4, 6) + "-" + keyStr.slice(6, 8);
-      return moment(dateStr).unix();
     };
 
     return RickshawRenderer;

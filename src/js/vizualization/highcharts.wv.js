@@ -8,17 +8,9 @@
     }
 
     HighchartsRenderer.prototype.renderGraph = function(data, container) {
-      var chart, chartArgs, hc, series,
-        _this = this;
+      var chart, chartArgs, hc, series;
 
-      series = _.map(data, function(series) {
-        return {
-          name: series.name,
-          data: _.map(series.data, function(point) {
-            return [_this.keyToDate(point.x), parseFloat(point.y) || 0];
-          })
-        };
-      });
+      series = data;
       chart = container.append("div").attr("class", "wv-chart");
       chartArgs = _.extend(this.chartArgs, {
         series: series,

@@ -4,10 +4,7 @@ class HighchartsRenderer
     @extractArgs(options)
 
   renderGraph : (data, container) ->
-    series = _.map data, (series) =>
-      name:series.name
-      data: _.map series.data, (point) =>
-        [@keyToDate(point.x),parseFloat(point.y) || 0]
+    series = data
     
     chart = container.append("div")
       .attr("class","wv-chart")

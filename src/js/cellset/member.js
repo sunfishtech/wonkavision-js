@@ -6,7 +6,7 @@
       this.dimension = dimension;
       this.key = data.key;
       this.caption = data.caption || this.key;
-      this.sort = data.sort || this.key;
+      this.sort = data.sort || this.caption;
       this.attributes = data.attributes || {};
     }
 

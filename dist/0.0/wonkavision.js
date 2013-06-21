@@ -56,11 +56,12 @@ OTHER DEALINGS IN THE SOFTWARE.
         success = function(data) {
           var response;
 
-          response = raw ? data : new Wonkavision.Cellset(data.json, query);
-          if (response.error != null) {
-            options.error(repsonse);
+          if (data.json.error != null) {
+            return options.error(data.json.error);
+          } else {
+            response = raw ? data : new Wonkavision.Cellset(data.json, query);
+            return options.success(response);
           }
-          return options.success(response);
         };
         error = options.error || function() {};
         this.get("query", query.toParams(), success, error);
@@ -88,6 +89,114 @@ OTHER DEALINGS IN THE SOFTWARE.
   })();
 
   this.Wonkavision.AXIS_NAMES = ["columns", "rows", "pages", "chapters", "sections"];
+
+}).call(this);
+
+(function() {
+  this.Wonkavision.Utilities = {
+    keyToDate: function(keyStr, unwrap) {
+      var date, dateStr;
+
+      if (unwrap == null) {
+        unwrap = true;
+      }
+      keyStr = keyStr.toString();
+      dateStr = "" + keyStr.slice(0, 4) + "-" + keyStr.slice(4, 6) + "-" + keyStr.slice(6, 8);
+      date = moment(dateStr);
+      if (unwrap) {
+        return date._d;
+      } else {
+        return date;
+      }
+    },
+    dateToKey: function(date) {
+      if (date == null) {
+        date = moment();
+      }
+      return parseInt(moment(date).format("YYYYMMDD"));
+    },
+    beginningOfMonth: function(date) {
+      if (date == null) {
+        date = new Date();
+      }
+      return moment(date).date(1)._d;
+    },
+    quarter: function(date) {
+      if (date == null) {
+        date = new Date();
+      }
+      return parseInt(moment(date).month() / 3) + 1;
+    },
+    beginningOfQuarter: function(date) {
+      var offset;
+
+      if (date == null) {
+        date = new Date();
+      }
+      date = moment(date);
+      offset = date.month() % 3;
+      return date.add("months", offset * -1).date(1)._d;
+    },
+    beginningOfYear: function(date) {
+      if (date == null) {
+        date = new Date();
+      }
+      return moment(date).dayOfYear(1)._d;
+    },
+    dateRange: function(startDate, endDate, toKeys) {
+      var range;
+
+      if (toKeys == null) {
+        toKeys = false;
+      }
+      range = [startDate, endDate];
+      if (toKeys) {
+        return _.map(range, this.dateToKey);
+      } else {
+        return range;
+      }
+    },
+    timeWindow: function(startDate, period, windowSize, toKeys) {
+      var end, start;
+
+      if (toKeys == null) {
+        toKeys = false;
+      }
+      start = moment(startDate).add(period, windowSize * -1)._d;
+      end = moment(startDate);
+      return this.dateRange(start, end, toKeys);
+    },
+    mtd: function(startDate, toKeys) {
+      var end, start;
+
+      if (toKeys == null) {
+        toKeys = false;
+      }
+      start = this.beginningOfMonth(startDate);
+      end = startDate;
+      return this.dateRange(start, end, toKeys);
+    },
+    ytd: function(startDate, toKeys) {
+      var end, start;
+
+      if (toKeys == null) {
+        toKeys = false;
+      }
+      start = this.beginningOfYear(startDate);
+      end = startDate;
+      return this.dateRange(start, end, toKeys);
+    },
+    qtd: function(startDate, toKeys) {
+      var end, start;
+
+      if (toKeys == null) {
+        toKeys = false;
+      }
+      start = this.beginningOfQuarter(startDate);
+      end = startDate;
+      return this.dateRange(start, end, toKeys);
+    }
+  };
 
 }).call(this);
 
@@ -207,7 +316,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 }).call(this);
 
 (function() {
-  var Filter;
+  var Filter,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   this.Wonkavision.Filter = Filter = (function() {
     function Filter(name, options) {
@@ -215,6 +325,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       if (options == null) {
         options = {};
       }
+      this.isFact = __bind(this.isFact, this);
       this.operator = options.operator || "eq";
       this.memberType = options.memberType || "dimension";
       this.value = options.value;
@@ -228,6 +339,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 
     Filter.prototype.isMeasure = function() {
       return this.memberType === "measure";
+    };
+
+    Filter.prototype.isFact = function() {
+      return this.memberType === "fact";
     };
 
     Filter.prototype.toString = function() {
@@ -272,10 +387,74 @@ OTHER DEALINGS IN THE SOFTWARE.
 }).call(this);
 
 (function() {
-  var Filter, Query,
+  var MemberReference;
+
+  this.Wonkavision.MemberReference = MemberReference = (function() {
+    function MemberReference(name, options) {
+      this.name = name;
+      if (options == null) {
+        options = {};
+      }
+      this.memberType = options.memberType || "dimension";
+      this.value = options.value;
+      this.attributeName = options.attributeName || (this.isDimension ? "key" : "count");
+      this.order = "asc";
+    }
+
+    MemberReference.prototype.isDimension = function() {
+      return this.memberType === "dimension";
+    };
+
+    MemberReference.prototype.isMeasure = function() {
+      return this.memberType === "measure";
+    };
+
+    MemberReference.prototype.isFact = function() {
+      return this.membertype === "fact";
+    };
+
+    MemberReference.prototype.toString = function() {
+      return [this.memberType, this.name, this.attributeName, this.order].join("::");
+    };
+
+    MemberReference.prototype.parse = function(filterString, delim) {
+      var parts;
+
+      if (delim == null) {
+        delim = "::";
+      }
+      parts = filterString.split(delim);
+      if (parts[0] === "dimension" || parts[0] === "measure" || parts[0] === "fact") {
+        this.memberType = parts.shift();
+        this.name = parts.shift();
+      } else {
+        this.name = parts.shift();
+      }
+      this.attributeName = parts.shift() || this.attributeName;
+      this.order = parts.shift() || this.order;
+      return this;
+    };
+
+    return MemberReference;
+
+  })();
+
+  this.Wonkavision.MemberReference.parse = function(filterString, delim) {
+    if (delim == null) {
+      delim = "::";
+    }
+    return new MemberReference("").parse(filterString, delim);
+  };
+
+}).call(this);
+
+(function() {
+  var Filter, MemberReference, Query,
     __slice = [].slice;
 
   Filter = this.Wonkavision.Filter;
+
+  MemberReference = this.Wonkavision.MemberReference;
 
   this.Wonkavision.Query = Query = (function() {
     function Query(client, query) {
@@ -295,6 +474,9 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.axes = [];
       this.filters = [];
       this.selectedMeasures = [];
+      this.order_by_attributes = [];
+      this.selected_attributes = [];
+      this.topFilter = null;
       _ref1 = Wonkavision.AXIS_NAMES;
       for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
         axis = _ref1[_j];
@@ -311,6 +493,16 @@ OTHER DEALINGS IN THE SOFTWARE.
       if (query.from != null) {
         this.from(query.from);
       }
+      if (query.order != null) {
+        this.order(query.order);
+      }
+      if (query.attributes != null) {
+        this.attributes(query.attributes);
+      }
+      if (query.top != null) {
+        this.top(query.top);
+      }
+      this.originalQuery = query;
     }
 
     Query.prototype.cube = function(cubeName) {
@@ -350,8 +542,67 @@ OTHER DEALINGS IN THE SOFTWARE.
       return this;
     };
 
+    Query.prototype.order = function() {
+      var attribute, attributes;
+
+      attributes = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      this.order_by_attributes = this.order_by_attributes.concat((function() {
+        var _i, _len, _ref, _results;
+
+        _ref = _.flatten(attributes);
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          attribute = _ref[_i];
+          _results.push(MemberReference.parse(attribute, "."));
+        }
+        return _results;
+      })());
+      return this;
+    };
+
+    Query.prototype.attributes = function() {
+      var attribute, attributes;
+
+      attributes = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      this.selected_attributes = this.selected_attributes.concat((function() {
+        var _i, _len, _ref, _results;
+
+        _ref = _.flatten(attributes);
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          attribute = _ref[_i];
+          _results.push(MemberReference.parse(attribute, "."));
+        }
+        return _results;
+      })());
+      return this;
+    };
+
+    Query.prototype.top = function(topFilter) {
+      var filter, value;
+
+      this.topFilter = {};
+      this.topFilter.count = topFilter.count;
+      this.topFilter.dimension = topFilter.dimension;
+      this.topFilter.measure = topFilter.measure;
+      this.topFilter.exclude = _.compact(_.flatten([topFilter.exclude]));
+      if (topFilter.where) {
+        return this.topFilter.filters = (function() {
+          var _ref, _results;
+
+          _ref = topFilter.where;
+          _results = [];
+          for (filter in _ref) {
+            value = _ref[filter];
+            _results.push(Filter.parse(filter, ".").withValue(value));
+          }
+          return _results;
+        })();
+      }
+    };
+
     Query.prototype.toParams = function() {
-      var axisName, f, query, _i, _len, _ref;
+      var a, axisName, f, query, _i, _len, _ref;
 
       query = {
         from: this.cubeName
@@ -372,11 +623,60 @@ OTHER DEALINGS IN THE SOFTWARE.
           return _results;
         }).call(this)).join(this.listDelimiter);
       }
+      if (!(this.order_by_attributes.length < 1)) {
+        query.order = ((function() {
+          var _i, _len, _ref, _results;
+
+          _ref = this.order_by_attributes;
+          _results = [];
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            a = _ref[_i];
+            _results.push(a.toString());
+          }
+          return _results;
+        }).call(this)).join(this.listDelimiter);
+      }
+      if (!(this.selected_attributes.length < 1)) {
+        query.attributes = ((function() {
+          var _i, _len, _ref, _results;
+
+          _ref = this.selected_attributes;
+          _results = [];
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            a = _ref[_i];
+            _results.push(a.toString());
+          }
+          return _results;
+        }).call(this)).join(this.listDelimiter);
+      }
       _ref = Wonkavision.AXIS_NAMES;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         axisName = _ref[_i];
         if (this.getAxis(axisName)) {
           query[axisName] = this.getAxis(axisName).join(this.listDelimiter);
+        }
+      }
+      if (this.topFilter != null) {
+        query["top_filter_count"] = this.topFilter.count;
+        query["top_filter_dimension"] = this.topFilter.dimension;
+        if (this.topFilter.measure != null) {
+          query["top_filter_measure"] = this.topFilter.measure;
+        }
+        if (this.topFilter.exclude != null) {
+          query["top_filter_exclude"] = this.topFilter.exclude.join(this.listDelimiter);
+        }
+        if (this.topFilter.filters) {
+          query["top_filter_filters"] = ((function() {
+            var _j, _len1, _ref1, _results;
+
+            _ref1 = this.topFilter.filters;
+            _results = [];
+            for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+              f = _ref1[_j];
+              _results.push(f.toString());
+            }
+            return _results;
+          }).call(this)).join(this.listDelimiter);
         }
       }
       query["from"] = this.cubeName;
@@ -423,42 +723,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 }).call(this);
 
 (function() {
-  var Client, Query, QuerySet;
-
-  Query = this.Wonkavision.Query;
-
-  Client = this.Wonkavision.Client;
-
-  this.Wonkavision.QuerySet = QuerySet = (function() {
-    function QuerySet(options) {
-      if (options == null) {
-        options = {};
-      }
-      this.serverUrl = options.url || options.serverUrl || "";
-      this.client = options.client || new Client(this.serverUrl);
-      this.queries = [];
-      this.global = new Query();
-    }
-
-    QuerySet.prototype.addQuery = function(query) {
-      var newQuery;
-
-      if (query == null) {
-        query = {};
-      }
-      newQuery = this.client.query(query);
-      return this.queries.push(this.client.query(query));
-    };
-
-    return QuerySet;
-
-  })();
-
-}).call(this);
-
-(function() {
-  var Axis, ChartTable, MeasureMember, Member, MemberCollection, PivotTable,
-    __slice = [].slice,
+  var Axis, ChartCell, ChartTable, DataTable, MeasureMember, Member, MemberCollection, PivotTable, TableCell, TableRow,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -471,7 +736,6 @@ OTHER DEALINGS IN THE SOFTWARE.
       if (options == null) {
         options = {};
       }
-      _.bindAll(this, "cellValues", "cellValue");
       this.axes = _.map(this.cellset.axes, function(axis) {
         return _this[axis.name] = new PivotTable.Axis(axis.name, axis.dimensions.slice(0), _this);
       });
@@ -521,73 +785,15 @@ OTHER DEALINGS IN THE SOFTWARE.
       return this.columns = r;
     };
 
-    PivotTable.prototype.cellValues = function(rowMemberOrMembers) {
-      var rowMember,
-        _this = this;
+    PivotTable.prototype.createDataTable = function() {
+      return new DataTable(this);
+    };
 
-      rowMember = _.isArray(rowMemberOrMembers) ? _.last(rowMemberOrMembers) : rowMemberOrMembers;
-      if (this.isFlat && this.measuresAxis === "rows") {
-        return this.extractMeasures([rowMember]);
-      } else if (this.columns && !this.columns.isEmpty) {
-        return _.map(this.columns.members.nonEmpty().leaves(), function(colMember) {
-          return _this.cellValue(rowMember, colMember);
-        });
-      } else {
-        return [this.cellValue(rowMember)];
+    PivotTable.prototype.createCell = function(row, keyMembers, measureName) {
+      if (measureName == null) {
+        measureName = null;
       }
-    };
-
-    PivotTable.prototype.cellValue = function() {
-      var keyMembers;
-
-      keyMembers = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      return this.extractValue(keyMembers);
-    };
-
-    PivotTable.prototype.extractValue = function(keyMembers, measureName) {
-      var cell, cellKey;
-
-      cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), function(m) {
-        return m.keyIndex;
-      }), function(m) {
-        return m.cellKey();
-      }));
-      cell = this.cellset.cells[cellKey];
-      if (cell != null) {
-        measureName = measureName || this.findMeasureName(keyMembers) || this.cellset.measureNames[0];
-        return cell[measureName].value;
-      }
-    };
-
-    PivotTable.prototype.extractMeasures = function(keyMembers, formatted) {
-      var cell, cellKey;
-
-      if (formatted == null) {
-        formatted = true;
-      }
-      cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), function(m) {
-        return m.keyIndex;
-      }), function(m) {
-        return m.cellKey();
-      }));
-      cell = this.cellset.cells[cellKey];
-      return _.map(this.cellset.measureNames, function(m) {
-        if (cell != null) {
-          if (formatted) {
-            return cell[m].formattedValue;
-          } else {
-            return cell[m].value;
-          }
-        }
-      });
-    };
-
-    PivotTable.prototype.findMeasureName = function(keyMembers) {
-      var _ref;
-
-      return (_ref = _.find(keyMembers, function(m) {
-        return (m != null ? m.measureName : void 0) != null;
-      })) != null ? _ref.measureName : void 0;
+      return new TableCell(row, keyMembers, measureName);
     };
 
     return PivotTable;
@@ -601,7 +807,6 @@ OTHER DEALINGS IN THE SOFTWARE.
       if (options == null) {
         options = {};
       }
-      _.bindAll(this, "cellValues", "cellValue");
       this.seriesSource = options.seriesSource || options.seriesFrom || (cellset.measureNames.length > 1 ? "measures" : "rows");
       ChartTable.__super__.constructor.call(this, cellset, options);
     }
@@ -615,35 +820,140 @@ OTHER DEALINGS IN THE SOFTWARE.
       return ChartTable.__super__.initializeAxes.call(this);
     };
 
-    ChartTable.prototype.cellValue = function() {
-      var keyMembers, seriesMembers,
+    ChartTable.prototype.createCell = function(row, keyMembers, measureName) {
+      return new ChartCell(row, keyMembers);
+    };
+
+    return ChartTable;
+
+  })(PivotTable);
+
+  this.Wonkavision.PivotTable.DataTable = DataTable = (function() {
+    function DataTable(pivot) {
+      var _ref, _ref1,
         _this = this;
 
-      keyMembers = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      if (this.seriesSource === "measures") {
-        return _.map(this.cellset.measureNames, function(measureName) {
+      this.pivot = pivot;
+      this.rowMembers = (_ref = this.pivot.rows) != null ? _ref.members.nonEmpty().partitionH() : void 0;
+      this.columnMembers = (_ref1 = this.pivot.columns) != null ? _ref1.members.nonEmpty().partitionV() : void 0;
+      this.rows = [];
+      _.map(this.rowMembers, function(rm) {
+        return _this.addRow(rm);
+      });
+    }
+
+    DataTable.prototype.addRow = function(rowMember) {
+      return this.rows.push(this.createRow(rowMember));
+    };
+
+    DataTable.prototype.createRow = function(rowMemberOrMembers) {
+      return new TableRow(this, rowMemberOrMembers);
+    };
+
+    return DataTable;
+
+  })();
+
+  this.Wonkavision.PivotTable.TableRow = TableRow = (function() {
+    function TableRow(table, rowMembers) {
+      var _this = this;
+
+      this.table = table;
+      this.rowMembers = rowMembers;
+      this.pivot = this.table.pivot;
+      this.cells = [];
+      this.rowMember = _.isArray(this.rowMembers) ? _.last(this.rowMembers) : this.rowMembersr;
+      if (this.pivot.isFlat && this.pivot.measuresAxis === "rows") {
+        _.map(this.pivot.cellset.measureNames, function(m) {
+          return _this.addCell([_this.rowMember], m);
+        });
+      } else if (this.pivot.columns && !this.pivot.columns.isEmpty) {
+        _.map(this.pivot.columns.members.nonEmpty().leaves(), function(colMember) {
+          return _this.addCell([_this.rowMember, colMember]);
+        });
+      } else {
+        [this.addCell([this.rowMember])];
+      }
+    }
+
+    TableRow.prototype.addCell = function(keyMembers, measureName) {
+      return this.cells.push(this.pivot.createCell(this, keyMembers, measureName));
+    };
+
+    return TableRow;
+
+  })();
+
+  this.Wonkavision.PivotTable.TableCell = TableCell = (function() {
+    function TableCell(row, keyMembers, measureName) {
+      var _ref, _ref1, _ref2;
+
+      this.row = row;
+      this.keyMembers = keyMembers;
+      this.measureName = measureName;
+      this.pivot = this.row.pivot;
+      this.cell = this.cellFor(this.keyMembers);
+      this.measureName || (this.measureName = this.findMeasureName(this.keyMembers));
+      this.measure = (_ref = this.cell) != null ? _ref[this.measureName] : void 0;
+      this.value = (_ref1 = this.measure) != null ? _ref1.value : void 0;
+      this.formattedValue = (_ref2 = this.measure) != null ? _ref2.formattedValue : void 0;
+    }
+
+    TableCell.prototype.cellFor = function(keyMembers) {
+      var cellKey;
+
+      cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), function(m) {
+        return m.keyIndex;
+      }), function(m) {
+        return m.cellKey();
+      }));
+      return this.pivot.cellset.cells[cellKey];
+    };
+
+    TableCell.prototype.findMeasureName = function(keyMembers) {
+      var _ref;
+
+      return ((_ref = _.find(keyMembers, function(m) {
+        return (m != null ? m.measureName : void 0) != null;
+      })) != null ? _ref.measureName : void 0) || this.pivot.cellset.measureNames[0];
+    };
+
+    return TableCell;
+
+  })();
+
+  this.Wonkavision.PivotTable.ChartCell = ChartCell = (function() {
+    function ChartCell(row, keyMembers) {
+      var seriesMembers,
+        _this = this;
+
+      this.row = row;
+      this.keyMembers = keyMembers;
+      this.pivot = this.row.pivot;
+      if (this.pivot.seriesSource === "measures") {
+        this.series = _.map(this.pivot.cellset.measureNames, function(measureName) {
           return {
             name: measureName,
             data: _this.seriesFromMeasure(keyMembers, measureName)
           };
         });
-      } else if (this.seriesDimension != null) {
-        seriesMembers = _.filter(this.seriesDimension.members, function(m) {
-          return _this.seriesCells[m.key] != null;
+      } else if (this.pivot.seriesDimension != null) {
+        seriesMembers = _.filter(this.pivot.seriesDimension.members, function(m) {
+          return _this.pivot.seriesCells[m.key] != null;
         });
-        return _.map(seriesMembers, function(seriesMember) {
+        this.series = _.map(seriesMembers, function(seriesMember) {
           return {
             name: seriesMember.caption,
             data: _this.seriesFromMember(keyMembers, seriesMember)
           };
         });
       }
-    };
+    }
 
-    ChartTable.prototype.seriesFromMeasure = function(keyMembers, measureName) {
+    ChartCell.prototype.seriesFromMeasure = function(keyMembers, measureName) {
       var _this = this;
 
-      return _.map(this.xAxisDimension.members, function(x) {
+      return _.map(this.pivot.xAxisDimension.members, function(x) {
         var key, pivotMember, xMember;
 
         xMember = Member.fromDimensionMember(x);
@@ -651,31 +961,31 @@ OTHER DEALINGS IN THE SOFTWARE.
         key = keyMembers.concat([pivotMember]);
         return {
           x: x.key,
-          y: _this.extractValue(key, measureName)
+          y: new TableCell(_this.row, key, measureName).value
         };
       });
     };
 
-    ChartTable.prototype.seriesFromMember = function(keyMembers, member) {
+    ChartCell.prototype.seriesFromMember = function(keyMembers, member) {
       var pivotMember,
         _this = this;
 
       pivotMember = Member.fromDimensionMember(member);
-      return _.map(this.xAxisDimension.members, function(x) {
+      return _.map(this.pivot.xAxisDimension.members, function(x) {
         var key, xMember;
 
         xMember = Member.fromDimensionMember(x);
         key = keyMembers.concat([pivotMember, xMember]);
         return {
           x: x.key,
-          y: _this.extractValue(key)
+          y: new TableCell(_this.row, key).value
         };
       });
     };
 
-    return ChartTable;
+    return ChartCell;
 
-  })(PivotTable);
+  })();
 
   this.Wonkavision.PivotTable.Axis = Axis = (function() {
     function Axis(name, dimensions, pivotTable) {
@@ -982,7 +1292,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.dimension = dimension;
       this.key = data.key;
       this.caption = data.caption || this.key;
-      this.sort = data.sort || this.key;
+      this.sort = data.sort || this.caption;
       this.attributes = data.attributes || {};
     }
 
@@ -1215,6 +1525,92 @@ OTHER DEALINGS IN THE SOFTWARE.
 }).call(this);
 
 (function() {
+  var MovingCalculation;
+
+  this.Wonkavision.MovingCalculation = MovingCalculation = (function() {
+    function MovingCalculation(options) {
+      if (options == null) {
+        options = {};
+      }
+      options = _.defaults(options, {
+        windowSize: 30,
+        calculation: "average",
+        injectMissingDates: true
+      });
+      this.windowSize = options.windowSize;
+      this.calculation = options.calculation;
+      this.injectMissingDates = options.injectMissingDates;
+      this.reset();
+    }
+
+    MovingCalculation.prototype.add = function(date, value) {
+      date = moment(date);
+      this.currentDate || (this.currentDate = date);
+      this.advanceTo(date);
+      this.addSample(value);
+      return this;
+    };
+
+    MovingCalculation.prototype.reset = function() {
+      this.samples = [];
+      this.values = [];
+      this.currentDate = null;
+      return this;
+    };
+
+    MovingCalculation.prototype.advanceTo = function(date) {
+      var _results;
+
+      date = moment(date);
+      _results = [];
+      while ((this.currentDate != null) && this.currentDate < date) {
+        _results.push(this.skipDay());
+      }
+      return _results;
+    };
+
+    MovingCalculation.prototype.skipDay = function() {
+      if (this.injectMissingDates) {
+        return this.addSample(0);
+      } else {
+        return this.advanceDay();
+      }
+    };
+
+    MovingCalculation.prototype.advanceDay = function() {
+      return this.currentDate.add('days', 1);
+    };
+
+    MovingCalculation.prototype.addSample = function(value) {
+      this.samples.unshift(value);
+      if (this.samples.length > this.windowSize) {
+        this.samples.pop();
+      }
+      this.values.push([this.currentDate.clone().unix() * 1000, this.currentValue()]);
+      return this.advanceDay();
+    };
+
+    MovingCalculation.prototype.currentValue = function() {
+      var reducer, sum;
+
+      reducer = function(memo, cur) {
+        return memo + cur;
+      };
+      sum = _.reduce(this.samples, reducer, 0);
+      if (this.calculation === "average") {
+        return sum / this.samples.length;
+      } else {
+        return sum;
+      }
+    };
+
+    return MovingCalculation;
+
+  })();
+
+}).call(this);
+
+(function() {
   var RickshawRenderer, _base;
 
   RickshawRenderer = (function() {
@@ -1234,12 +1630,7 @@ OTHER DEALINGS IN THE SOFTWARE.
         return {
           name: series.name,
           color: _this.colorFor(series.name),
-          data: _.map(series.data, function(point) {
-            return {
-              x: _this.keyToDate(point.x),
-              y: parseFloat(point.y) || 0
-            };
-          })
+          data: series.data
         };
       });
       chart = container.append("div").attr("class", "wv-chart");
@@ -1283,13 +1674,6 @@ OTHER DEALINGS IN THE SOFTWARE.
       return this.hoverArgs = args.hover || {};
     };
 
-    RickshawRenderer.prototype.keyToDate = function(keyStr) {
-      var dateStr;
-
-      dateStr = "" + keyStr.slice(0, 4) + "-" + keyStr.slice(4, 6) + "-" + keyStr.slice(6, 8);
-      return moment(dateStr).unix();
-    };
-
     return RickshawRenderer;
 
   })();
@@ -1310,17 +1694,9 @@ OTHER DEALINGS IN THE SOFTWARE.
     }
 
     HighchartsRenderer.prototype.renderGraph = function(data, container) {
-      var chart, chartArgs, hc, series,
-        _this = this;
+      var chart, chartArgs, hc, series;
 
-      series = _.map(data, function(series) {
-        return {
-          name: series.name,
-          data: _.map(series.data, function(point) {
-            return [_this.keyToDate(point.x), parseFloat(point.y) || 0];
-          })
-        };
-      });
+      series = data;
       chart = container.append("div").attr("class", "wv-chart");
       chartArgs = _.extend(this.chartArgs, {
         series: series,
@@ -1403,7 +1779,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 }).call(this);
 
 (function() {
-  var PivotTableView;
+  var MovingCalculation, PivotTableView, Utilities;
+
+  MovingCalculation = this.Wonkavision.MovingCalculation;
+
+  Utilities = this.Wonkavision.Utilities;
 
   this.Wonkavision.PivotTableView = PivotTableView = (function() {
     function PivotTableView(options) {
@@ -1412,19 +1792,19 @@ OTHER DEALINGS IN THE SOFTWARE.
     }
 
     PivotTableView.prototype.render = function(args) {
-      var _ref, _ref1;
-
       this.extractArgs(args);
       if (this.viewType === "text") {
         this.pivot = new Wonkavision.PivotTable(this.data, args);
       } else {
         this.pivot = new Wonkavision.ChartTable(this.data, args);
       }
-      if (this.pivot.isFlat) {
+      if (this.pivot.isFlat && this.viewType === "text") {
         this.pivot.pivot();
       }
-      this.rows = ((_ref = this.pivot.rows) != null ? _ref.members.nonEmpty() : void 0) || [];
-      this.columns = ((_ref1 = this.pivot.columns) != null ? _ref1.members.nonEmpty() : void 0) || [];
+      this.dataTable = this.pivot.createDataTable();
+      if (this.suppressMeasureHeaders == null) {
+        this.suppressMeasureHeaders = this.pivot.cellset.measureNames.length < 2;
+      }
       return this.element.append("table").attr("class", "wv-pivot-table").call(this.renderTable);
     };
 
@@ -1436,19 +1816,23 @@ OTHER DEALINGS IN THE SOFTWARE.
         this.element = d3.selectAll(args.element);
       }
       this.viewType = args.viewType || args.view || this.detectViewType(args);
-      if (this.viewType !== "text") {
-        this.renderer = this.createRenderer(args);
-      }
+      this.renderer = this.viewType === "text" ? args.cellRenderer : this.createRenderer(args);
       this.formatLabel = args.formatLabel || function(l) {
         return l;
       };
-      return this.formatData = args.formatData || (function(d) {
-        if (d != null) {
-          return d;
+      this.formatData = args.formatData || (function(d) {
+        if (d.formattedValue != null) {
+          return d.formattedValue;
         } else {
           return "-";
         }
       });
+      this.smooth = args.smooth;
+      if (this.smooth) {
+        this.smoothingMethod = args.smoothingMethod;
+        this.smoothingWindow = args.smoothingWindow || 30;
+      }
+      return this.suppressMeasureHeaders = args.suppressMeasureHeaders;
     };
 
     PivotTableView.prototype.createRenderer = function(args) {
@@ -1465,6 +1849,7 @@ OTHER DEALINGS IN THE SOFTWARE.
     };
 
     PivotTableView.prototype.renderTable = function(tableSelection) {
+      this.dataRows = [];
       this.table = tableSelection;
       this.table.call(this.renderColumnHeaders);
       return this.table.call(this.renderTableData);
@@ -1485,10 +1870,10 @@ OTHER DEALINGS IN THE SOFTWARE.
           return _this.formatLabel(name);
         });
       } else {
-        colMembers = this.columns.partitionV();
+        colMembers = this.dataTable.columnMembers;
         thead = tableSelection.append("thead");
-        chr = thead.selectAll("tr.wv-col").data(colMembers).enter().append("tr").attr("class", "wv-col");
-        fillSpan = this.pivot.rows.dimensions.length + (this.pivot.measuresAxis === "rows" ? 1 : 0);
+        chr = thead.selectAll("tr.wv-col").data(this.filterColHeaders(colMembers)).enter().append("tr").attr("class", "wv-col");
+        fillSpan = this.pivot.rows.dimensions.length + (this.pivot.measuresAxis === "rows" && !this.suppressMeasureHeaders ? 1 : 0);
         chr.append("th").attr("colspan", fillSpan);
         return ch = chr.selectAll("td.wv-col-header").data((function(d) {
           return d;
@@ -1503,26 +1888,27 @@ OTHER DEALINGS IN THE SOFTWARE.
     };
 
     PivotTableView.prototype.renderTableData = function(tableSelection) {
-      var cell, rh, rhr, rowMembers, self, tbody,
+      var cell, rh, rhr, self, tbody,
         _this = this;
 
-      rowMembers = this.rows.partitionH();
       tbody = tableSelection.append("tbody");
-      rhr = tbody.selectAll("tr.wv-row").data(rowMembers).enter().append("tr").attr("class", "wv-row");
-      rh = rhr.selectAll("th.wv-row-header").data((function(d) {
-        return d;
-      }), function(d) {
-        return d.key.toString();
+      rhr = tbody.selectAll("tr.wv-row").data(this.dataTable.rows).enter().append("tr").attr("class", "wv-row");
+      rh = rhr.selectAll("th.wv-row-header").data((function(row) {
+        return _this.filterRowHeaders(row.rowMembers);
+      }), function(member) {
+        return member.key.toString();
       }).enter().append("th").text(function(level) {
         return _this.formatLabel(level.caption);
       }).attr("rowspan", function(d) {
         return _this.memberSpan(d);
       }).attr("class", "wv-row-header");
       self = this;
-      cell = rhr.selectAll("td.wv-cell").data(this.pivot.cellValues).enter().append("td").attr("class", "wv-cell");
+      cell = rhr.selectAll("td.wv-cell").data(function(row) {
+        return row.cells;
+      }).enter().append("td").attr("class", "wv-cell");
       if (this.viewType === "text") {
-        return cell.text(function(d) {
-          return _this.formatData(d);
+        return cell.each(function(data, idx) {
+          return self.renderCell(data, idx, this);
         });
       } else {
         return cell.each(function(data, idx) {
@@ -1531,9 +1917,42 @@ OTHER DEALINGS IN THE SOFTWARE.
       }
     };
 
-    PivotTableView.prototype.renderGraph = function(data, idx, cell) {
-      var container;
+    PivotTableView.prototype.filterRowHeaders = function(levels) {
+      var data;
 
+      if (!(levels.length > 0)) {
+        return levels;
+      }
+      data = levels;
+      if ((_.last(data).isMeasure != null) && this.suppressMeasureHeaders) {
+        data = data.slice(0, -1);
+      }
+      return data;
+    };
+
+    PivotTableView.prototype.filterColHeaders = function(headerRows) {
+      if (this.suppressMeasureHeaders && this.pivot.measuresAxis === "columns") {
+        return headerRows.slice(0, -1);
+      } else {
+        return headerRows;
+      }
+    };
+
+    PivotTableView.prototype.renderCell = function(tableCell, idx, cell) {
+      var _this = this;
+
+      this.renderer || (this.renderer = function(tableCell, idx, cell) {
+        return d3.select(cell).text(function(tc) {
+          return _this.formatData(tc);
+        });
+      });
+      return this.renderer(tableCell, idx, cell);
+    };
+
+    PivotTableView.prototype.renderGraph = function(chartCell, idx, cell) {
+      var container, data;
+
+      data = this.prepareSeries(chartCell.series);
       container = d3.select(cell).append("div").attr("class", "wv-chart-container");
       return this.renderer.renderGraph(data, container);
     };
@@ -1544,6 +1963,49 @@ OTHER DEALINGS IN THE SOFTWARE.
       } else {
         return "text";
       }
+    };
+
+    PivotTableView.prototype.prepareSeries = function(data) {
+      var _this = this;
+
+      return data = _.map(data, function(series) {
+        return {
+          name: _this.formatLabel(series.name),
+          data: _this.prepareSeriesData(series.data)
+        };
+      });
+    };
+
+    PivotTableView.prototype.prepareSeriesData = function(data) {
+      var calc,
+        _this = this;
+
+      if (this.smoothingMethod != null) {
+        calc = new MovingCalculation({
+          windowSize: this.smoothingWindow,
+          calculation: this.smoothingMethod
+        });
+        _.each(data, function(point) {
+          return calc.add(_this.keyToDate(point.x), parseFloat(point.y || 0));
+        });
+        return _.map(calc.values.slice(this.smoothingWindow), function(point) {
+          return {
+            x: point[0],
+            y: point[1]
+          };
+        });
+      } else {
+        return _.map(data, function(point) {
+          return {
+            x: _this.keyToDate(point.x),
+            y: parseFloat(point.y) || 0
+          };
+        });
+      }
+    };
+
+    PivotTableView.prototype.keyToDate = function(keyStr) {
+      return Utilities.keyToDate(keyStr, false).unix() * 1000;
     };
 
     return PivotTableView;

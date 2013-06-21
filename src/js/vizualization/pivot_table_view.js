@@ -1,5 +1,9 @@
 (function() {
-  var PivotTableView;
+  var MovingCalculation, PivotTableView, Utilities;
+
+  MovingCalculation = this.Wonkavision.MovingCalculation;
+
+  Utilities = this.Wonkavision.Utilities;
 
   this.Wonkavision.PivotTableView = PivotTableView = (function() {
     function PivotTableView(options) {
@@ -8,19 +12,19 @@
     }
 
     PivotTableView.prototype.render = function(args) {
-      var _ref, _ref1;
-
       this.extractArgs(args);
       if (this.viewType === "text") {
         this.pivot = new Wonkavision.PivotTable(this.data, args);
       } else {
         this.pivot = new Wonkavision.ChartTable(this.data, args);
       }
-      if (this.pivot.isFlat) {
+      if (this.pivot.isFlat && this.viewType === "text") {
         this.pivot.pivot();
       }
-      this.rows = ((_ref = this.pivot.rows) != null ? _ref.members.nonEmpty() : void 0) || [];
-      this.columns = ((_ref1 = this.pivot.columns) != null ? _ref1.members.nonEmpty() : void 0) || [];
+      this.dataTable = this.pivot.createDataTable();
+      if (this.suppressMeasureHeaders == null) {
+        this.suppressMeasureHeaders = this.pivot.cellset.measureNames.length < 2;
+      }
       return this.element.append("table").attr("class", "wv-pivot-table").call(this.renderTable);
     };
 
@@ -32,19 +36,23 @@
         this.element = d3.selectAll(args.element);
       }
       this.viewType = args.viewType || args.view || this.detectViewType(args);
-      if (this.viewType !== "text") {
-        this.renderer = this.createRenderer(args);
-      }
+      this.renderer = this.viewType === "text" ? args.cellRenderer : this.createRenderer(args);
       this.formatLabel = args.formatLabel || function(l) {
         return l;
       };
-      return this.formatData = args.formatData || (function(d) {
-        if (d != null) {
-          return d;
+      this.formatData = args.formatData || (function(d) {
+        if (d.formattedValue != null) {
+          return d.formattedValue;
         } else {
           return "-";
         }
       });
+      this.smooth = args.smooth;
+      if (this.smooth) {
+        this.smoothingMethod = args.smoothingMethod;
+        this.smoothingWindow = args.smoothingWindow || 30;
+      }
+      return this.suppressMeasureHeaders = args.suppressMeasureHeaders;
     };
 
     PivotTableView.prototype.createRenderer = function(args) {
@@ -61,6 +69,7 @@
     };
 
     PivotTableView.prototype.renderTable = function(tableSelection) {
+      this.dataRows = [];
       this.table = tableSelection;
       this.table.call(this.renderColumnHeaders);
       return this.table.call(this.renderTableData);
@@ -81,10 +90,10 @@
           return _this.formatLabel(name);
         });
       } else {
-        colMembers = this.columns.partitionV();
+        colMembers = this.dataTable.columnMembers;
         thead = tableSelection.append("thead");
-        chr = thead.selectAll("tr.wv-col").data(colMembers).enter().append("tr").attr("class", "wv-col");
-        fillSpan = this.pivot.rows.dimensions.length + (this.pivot.measuresAxis === "rows" ? 1 : 0);
+        chr = thead.selectAll("tr.wv-col").data(this.filterColHeaders(colMembers)).enter().append("tr").attr("class", "wv-col");
+        fillSpan = this.pivot.rows.dimensions.length + (this.pivot.measuresAxis === "rows" && !this.suppressMeasureHeaders ? 1 : 0);
         chr.append("th").attr("colspan", fillSpan);
         return ch = chr.selectAll("td.wv-col-header").data((function(d) {
           return d;
@@ -99,26 +108,27 @@
     };
 
     PivotTableView.prototype.renderTableData = function(tableSelection) {
-      var cell, rh, rhr, rowMembers, self, tbody,
+      var cell, rh, rhr, self, tbody,
         _this = this;
 
-      rowMembers = this.rows.partitionH();
       tbody = tableSelection.append("tbody");
-      rhr = tbody.selectAll("tr.wv-row").data(rowMembers).enter().append("tr").attr("class", "wv-row");
-      rh = rhr.selectAll("th.wv-row-header").data((function(d) {
-        return d;
-      }), function(d) {
-        return d.key.toString();
+      rhr = tbody.selectAll("tr.wv-row").data(this.dataTable.rows).enter().append("tr").attr("class", "wv-row");
+      rh = rhr.selectAll("th.wv-row-header").data((function(row) {
+        return _this.filterRowHeaders(row.rowMembers);
+      }), function(member) {
+        return member.key.toString();
       }).enter().append("th").text(function(level) {
         return _this.formatLabel(level.caption);
       }).attr("rowspan", function(d) {
         return _this.memberSpan(d);
       }).attr("class", "wv-row-header");
       self = this;
-      cell = rhr.selectAll("td.wv-cell").data(this.pivot.cellValues).enter().append("td").attr("class", "wv-cell");
+      cell = rhr.selectAll("td.wv-cell").data(function(row) {
+        return row.cells;
+      }).enter().append("td").attr("class", "wv-cell");
       if (this.viewType === "text") {
-        return cell.text(function(d) {
-          return _this.formatData(d);
+        return cell.each(function(data, idx) {
+          return self.renderCell(data, idx, this);
         });
       } else {
         return cell.each(function(data, idx) {
@@ -127,9 +137,42 @@
       }
     };
 
-    PivotTableView.prototype.renderGraph = function(data, idx, cell) {
-      var container;
+    PivotTableView.prototype.filterRowHeaders = function(levels) {
+      var data;
 
+      if (!(levels.length > 0)) {
+        return levels;
+      }
+      data = levels;
+      if ((_.last(data).isMeasure != null) && this.suppressMeasureHeaders) {
+        data = data.slice(0, -1);
+      }
+      return data;
+    };
+
+    PivotTableView.prototype.filterColHeaders = function(headerRows) {
+      if (this.suppressMeasureHeaders && this.pivot.measuresAxis === "columns") {
+        return headerRows.slice(0, -1);
+      } else {
+        return headerRows;
+      }
+    };
+
+    PivotTableView.prototype.renderCell = function(tableCell, idx, cell) {
+      var _this = this;
+
+      this.renderer || (this.renderer = function(tableCell, idx, cell) {
+        return d3.select(cell).text(function(tc) {
+          return _this.formatData(tc);
+        });
+      });
+      return this.renderer(tableCell, idx, cell);
+    };
+
+    PivotTableView.prototype.renderGraph = function(chartCell, idx, cell) {
+      var container, data;
+
+      data = this.prepareSeries(chartCell.series);
       container = d3.select(cell).append("div").attr("class", "wv-chart-container");
       return this.renderer.renderGraph(data, container);
     };
@@ -140,6 +183,49 @@
       } else {
         return "text";
       }
+    };
+
+    PivotTableView.prototype.prepareSeries = function(data) {
+      var _this = this;
+
+      return data = _.map(data, function(series) {
+        return {
+          name: _this.formatLabel(series.name),
+          data: _this.prepareSeriesData(series.data)
+        };
+      });
+    };
+
+    PivotTableView.prototype.prepareSeriesData = function(data) {
+      var calc,
+        _this = this;
+
+      if (this.smoothingMethod != null) {
+        calc = new MovingCalculation({
+          windowSize: this.smoothingWindow,
+          calculation: this.smoothingMethod
+        });
+        _.each(data, function(point) {
+          return calc.add(_this.keyToDate(point.x), parseFloat(point.y || 0));
+        });
+        return _.map(calc.values.slice(this.smoothingWindow), function(point) {
+          return {
+            x: point[0],
+            y: point[1]
+          };
+        });
+      } else {
+        return _.map(data, function(point) {
+          return {
+            x: _this.keyToDate(point.x),
+            y: parseFloat(point.y) || 0
+          };
+        });
+      }
+    };
+
+    PivotTableView.prototype.keyToDate = function(keyStr) {
+      return Utilities.keyToDate(keyStr, false).unix() * 1000;
     };
 
     return PivotTableView;

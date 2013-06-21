@@ -1,6 +1,5 @@
 this.Wonkavision.PivotTable = class PivotTable
   constructor : (@cellset, options = {}) ->
-    _.bindAll this, "cellValues", "cellValue"
 
     @axes = _.map @cellset.axes, (axis) =>
       this[axis.name] = new PivotTable.Axis(axis.name, axis.dimensions.slice(0), this)
@@ -17,8 +16,7 @@ this.Wonkavision.PivotTable = class PivotTable
         skey = cell.key[@seriesDimension.keyIndex]
         sc = (@seriesCells[skey] ||= [])
         sc.push cell
-
-    
+   
     this[@measuresAxis]?.appendMeasures() if @measuresAxis?  
 
   initializeAxes : -> axis.initialize() for axis in @axes
@@ -28,40 +26,15 @@ this.Wonkavision.PivotTable = class PivotTable
     @rows = @columns
     @columns = r
 
-  cellValues : (rowMemberOrMembers) ->
-    rowMember = if _.isArray(rowMemberOrMembers) then _.last(rowMemberOrMembers) else rowMemberOrMembers
-    if @isFlat && @measuresAxis == "rows"
-        @extractMeasures( [rowMember] ) 
-    else if @columns && !@columns.isEmpty
-      _.map @columns.members.nonEmpty().leaves(), (colMember) =>
-        @cellValue( rowMember, colMember )
-    else
-      [ @cellValue( rowMember ) ]
-      
+  createDataTable : ->
+    new DataTable(this)
+   
+  createCell : (row, keyMembers, measureName = null) -> new TableCell(row, keyMembers, measureName)
 
-  cellValue : (keyMembers...) -> @extractValue(keyMembers)
-
-  extractValue : (keyMembers, measureName) ->
-    cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), (m) -> m.keyIndex), (m) -> m.cellKey()))
-    cell = @cellset.cells[cellKey]
-    if cell?
-      measureName = measureName || @findMeasureName(keyMembers) || @cellset.measureNames[0]
-      cell[measureName].value
-
-  extractMeasures : (keyMembers, formatted = true) ->
-    cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), (m) -> m.keyIndex), (m) -> m.cellKey()))
-    cell = @cellset.cells[cellKey]
-    _.map @cellset.measureNames, (m) ->
-      if cell?
-        if formatted then cell[m].formattedValue else cell[m].value
-
-  findMeasureName : (keyMembers) ->
-    _.find( keyMembers, (m) -> m?.measureName? )?.measureName
-
+  
 #----ChartTable--------------------------------------------------
 this.Wonkavision.ChartTable = class ChartTable extends PivotTable
   constructor : (cellset, options = {}) ->
-    _.bindAll this, "cellValues", "cellValue"
     @seriesSource = options.seriesSource || options.seriesFrom || 
       if cellset.measureNames.length > 1 then "measures" else "rows"
     super(cellset, options)   
@@ -73,32 +46,96 @@ this.Wonkavision.ChartTable = class ChartTable extends PivotTable
     if @seriesSource == "measures" then @measuresAxis = null
     super()
 
-  cellValue : (keyMembers...) ->
-    if @seriesSource == "measures"
-      _.map @cellset.measureNames, (measureName) =>
+  createCell : (row, keyMembers, measureName) ->
+    new ChartCell(row, keyMembers)
+
+#---Data Table------------------------------
+this.Wonkavision.PivotTable.DataTable = class DataTable
+  constructor: (@pivot) ->
+    @rowMembers = @pivot.rows?.members.nonEmpty().partitionH()
+    @columnMembers = @pivot.columns?.members.nonEmpty().partitionV()
+    
+    @rows = []
+
+    _.map @rowMembers, (rm) =>
+      @addRow(rm)
+
+  addRow : (rowMember) ->
+    @rows.push @createRow(rowMember)
+
+  createRow : (rowMemberOrMembers) ->
+    return new TableRow(this, rowMemberOrMembers)
+
+
+#---Table Row-------------------------------
+this.Wonkavision.PivotTable.TableRow = class TableRow
+  constructor: (@table, @rowMembers) ->
+    @pivot = @table.pivot
+    @cells = []
+    @rowMember = if _.isArray(@rowMembers) then _.last(@rowMembers) else @rowMembersr
+
+    if @pivot.isFlat && @pivot.measuresAxis == "rows"
+      _.map @pivot.cellset.measureNames, (m) =>
+        @addCell([@rowMember], m)
+    else if @pivot.columns && !@pivot.columns.isEmpty
+      _.map @pivot.columns.members.nonEmpty().leaves(), (colMember) =>
+        @addCell( [@rowMember, colMember] )
+    else
+      [ @addCell( [@rowMember] ) ]
+
+  addCell : (keyMembers, measureName) ->
+    @cells.push @pivot.createCell(this, keyMembers, measureName) 
+
+
+#---Table Cell------------------------------
+this.Wonkavision.PivotTable.TableCell = class TableCell
+  constructor: (@row, @keyMembers, @measureName) ->
+    @pivot = @row.pivot
+    @cell = @cellFor(@keyMembers)
+    @measureName ||= @findMeasureName(@keyMembers)
+    @measure = @cell?[@measureName]
+    @value = @measure?.value
+    @formattedValue = @measure?.formattedValue
+
+  cellFor: (keyMembers) ->
+    cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), (m) -> m.keyIndex), (m) -> m.cellKey()))
+    @pivot.cellset.cells[cellKey]
+
+  findMeasureName : (keyMembers) ->
+    _.find( keyMembers, (m) -> m?.measureName? )?.measureName || @pivot.cellset.measureNames[0]
+
+
+#---Chart Cell------------------------------
+this.Wonkavision.PivotTable.ChartCell = class ChartCell
+  constructor: (@row, @keyMembers) ->
+    @pivot = @row.pivot
+    if @pivot.seriesSource == "measures"
+      @series = _.map @pivot.cellset.measureNames, (measureName) =>
         name : measureName
         data : @seriesFromMeasure keyMembers, measureName
-    else if @seriesDimension?      
-      seriesMembers = _.filter @seriesDimension.members, (m) => @seriesCells[m.key]?
-      _.map seriesMembers, (seriesMember) =>
+    else if @pivot.seriesDimension?      
+      seriesMembers = _.filter @pivot.seriesDimension.members, (m) => @pivot.seriesCells[m.key]?
+      @series = _.map seriesMembers, (seriesMember) =>
         name : seriesMember.caption
         data : @seriesFromMember keyMembers, seriesMember
 
   seriesFromMeasure : (keyMembers, measureName) ->
-    _.map @xAxisDimension.members, (x) =>
+    _.map @pivot.xAxisDimension.members, (x) =>
       xMember = Member.fromDimensionMember(x)
       pivotMember = new MeasureMember(measureName, xMember)
       key = keyMembers.concat [pivotMember]
       x : x.key
-      y : @extractValue(key, measureName)
+      y : new TableCell(@row, key, measureName).value
 
   seriesFromMember : (keyMembers, member) ->
     pivotMember = Member.fromDimensionMember(member)
-    _.map @xAxisDimension.members, (x) =>
+    _.map @pivot.xAxisDimension.members, (x) =>
       xMember = Member.fromDimensionMember(x)
       key = keyMembers.concat [pivotMember, xMember]
       x : x.key
-      y : @extractValue(key)
+      y : new TableCell(@row, key).value
+
+
 
 #---Axis------------------------------------
 this.Wonkavision.PivotTable.Axis = class Axis

@@ -31,11 +31,12 @@
         success = function(data) {
           var response;
 
-          response = raw ? data : new Wonkavision.Cellset(data.json, query);
-          if (response.error != null) {
-            options.error(repsonse);
+          if (data.json.error != null) {
+            return options.error(data.json.error);
+          } else {
+            response = raw ? data : new Wonkavision.Cellset(data.json, query);
+            return options.success(response);
           }
-          return options.success(response);
         };
         error = options.error || function() {};
         this.get("query", query.toParams(), success, error);
