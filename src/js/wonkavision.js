@@ -24,7 +24,7 @@
       };
 
       Client.prototype.execute = function(query, options) {
-        var error, raw, success,
+        var error, path, raw, success,
           _this = this;
 
         raw = options.raw;
@@ -34,12 +34,13 @@
           if (data.json.error != null) {
             return options.error(data.json.error);
           } else {
-            response = raw ? data : new Wonkavision.Cellset(data.json, query);
+            response = raw ? data : options.facts ? data.json.data : new Wonkavision.Cellset(data.json, query);
             return options.success(response);
           }
         };
         error = options.error || function() {};
-        this.get("query", query.toParams(), success, error);
+        path = options.facts ? "facts" : "query";
+        this.get(path, query.toParams(), success, error);
         return this;
       };
 

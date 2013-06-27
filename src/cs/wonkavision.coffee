@@ -14,12 +14,19 @@ this.Wonkavision = class Wonkavision
         if data.json.error?
           options.error(data.json.error)
         else
-          response = if raw then data else new Wonkavision.Cellset(data.json, query)
+          response =
+            if raw
+              data
+            else if options.facts
+              data.json.data
+            else
+              new Wonkavision.Cellset(data.json, query)
           options.success(response)
 
       error = options.error || () ->
 
-      @get("query", query.toParams(), success, error)
+      path = if options.facts then "facts" else "query"
+      @get(path, query.toParams(), success, error)
       this
 
     get : (path, params, success, error) ->
