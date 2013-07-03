@@ -74,7 +74,7 @@ this.Wonkavision.PivotTableView = class PivotTableView
       fillSpan = @pivot.rows.dimensions.length +
         if @pivot.measuresAxis == "rows" && !@suppressMeasureHeaders then 1 else 0
       chr.append("th").attr("colspan", fillSpan)
-      ch = chr.selectAll("td.wv-col-header")
+      ch = chr.selectAll("th.wv-col-header")
         .data(((d) -> d), (d) -> d.key.toString())
         .enter().append("th")
         .text((level) => @formatLabel(level.caption))
@@ -104,7 +104,6 @@ this.Wonkavision.PivotTableView = class PivotTableView
       cell.each((data,idx) -> self.renderCell(data, idx, this))
     else
       cell.each((data, idx) -> self.renderGraph(data, idx, this))
-
 
   filterRowHeaders: (levels) ->
     return levels unless levels.length > 0

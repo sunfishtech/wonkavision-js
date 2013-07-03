@@ -503,6 +503,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       if (query.top != null) {
         this.top(query.top);
       }
+      this.includeTotals = !!query.includeTotals;
       this.originalQuery = query;
     }
 
@@ -890,14 +891,17 @@ OTHER DEALINGS IN THE SOFTWARE.
       var _ref, _ref1, _ref2;
 
       this.row = row;
-      this.keyMembers = keyMembers;
       this.measureName = measureName;
+      this.keyMembers = keyMembers.slice(0);
       this.pivot = this.row.pivot;
       this.cell = this.cellFor(this.keyMembers);
       this.measureName || (this.measureName = this.findMeasureName(this.keyMembers));
       this.measure = (_ref = this.cell) != null ? _ref[this.measureName] : void 0;
       this.value = (_ref1 = this.measure) != null ? _ref1.value : void 0;
       this.formattedValue = (_ref2 = this.measure) != null ? _ref2.formattedValue : void 0;
+      this.totalsCell = !!_.detect(this.keyMembers, function(m) {
+        return m.totals;
+      });
     }
 
     TableCell.prototype.cellFor = function(keyMembers) {
@@ -952,9 +956,13 @@ OTHER DEALINGS IN THE SOFTWARE.
     }
 
     ChartCell.prototype.seriesFromMeasure = function(keyMembers, measureName) {
-      var _this = this;
+      var members,
+        _this = this;
 
-      return _.map(this.pivot.xAxisDimension.members, function(x) {
+      members = _.select(this.pivot.xAxisDimension.members, function(m) {
+        return m.key != null;
+      });
+      return _.map(members, function(x) {
         var key, pivotMember, xMember;
 
         xMember = Member.fromDimensionMember(x);
@@ -968,11 +976,14 @@ OTHER DEALINGS IN THE SOFTWARE.
     };
 
     ChartCell.prototype.seriesFromMember = function(keyMembers, member) {
-      var pivotMember,
+      var members, pivotMember,
         _this = this;
 
       pivotMember = Member.fromDimensionMember(member);
-      return _.map(this.pivot.xAxisDimension.members, function(x) {
+      members = _.select(this.pivot.xAxisDimension.members, function(m) {
+        return m.key != null;
+      });
+      return _.map(members, function(x) {
         var key, xMember;
 
         xMember = Member.fromDimensionMember(x);
@@ -1053,10 +1064,10 @@ OTHER DEALINGS IN THE SOFTWARE.
     function Member(key, parent, keyIndex, member) {
       var _ref;
 
-      this.key = key;
       this.parent = parent;
       this.keyIndex = keyIndex;
       this.member = member;
+      this.key = key;
       this.axis = ((_ref = this.parent) != null ? _ref.axis : void 0) != null ? this.parent.axis : this.parent;
       this.caption = this.member.caption;
       this.depth = this.axis ? this.keyIndex - this.axis.startIndex : 0;
@@ -1065,6 +1076,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       if (!this.isLeaf) {
         this.members = new MemberCollection();
       }
+      this.totals = this.member.totals;
     }
 
     Member.prototype.cellKey = function() {
@@ -1120,6 +1132,8 @@ OTHER DEALINGS IN THE SOFTWARE.
       parentMember.isLeaf = false;
       this.isMeasure = true;
       this.keyIndex = parentMember.keyIndex;
+      this.member = parentMember.member;
+      this.totals = this.member.totals;
     }
 
     MeasureMember.prototype.cellKey = function() {
@@ -1146,9 +1160,15 @@ OTHER DEALINGS IN THE SOFTWARE.
     }
 
     MemberCollection.prototype.get = function(key) {
+      var _this = this;
+
       return _.find(this.members, function(l) {
-        return l.key.toString() === key.toString();
+        return _this.compareKeys(l.key, key);
       });
+    };
+
+    MemberCollection.prototype.compareKeys = function(left, right) {
+      return left.toString() === right.toString();
     };
 
     MemberCollection.prototype.push = function(level) {
@@ -1295,10 +1315,11 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.caption = data.caption || this.key;
       this.sort = data.sort || this.caption;
       this.attributes = data.attributes || {};
+      this.totals = !!data.totals;
     }
 
     Member.prototype.toString = function() {
-      return key.toString();
+      return (typeof key !== "undefined" && key !== null ? key.toString() : void 0) || "<null>";
     };
 
     Member.prototype.toKey = function() {
@@ -1328,7 +1349,18 @@ OTHER DEALINGS IN THE SOFTWARE.
       }), function(member) {
         return member.sort;
       });
+      if (this.axis.cellset.includeTotals) {
+        this.members.push(new Member(this, {
+          key: null,
+          caption: "" + this.name + "_total",
+          totals: true
+        }));
+      }
     }
+
+    Dimension.prototype.sortBy = function(sortFunc) {
+      return this.members = _.sortBy(this.members, sortFunc);
+    };
 
     return Dimension;
 
@@ -1409,7 +1441,10 @@ OTHER DEALINGS IN THE SOFTWARE.
           measure = _ref[_i];
           this.addMeasure(measure);
         }
-        this.key = data.key;
+        this.key = data.key.slice(0);
+        while (this.key.length < this.cellset.levelCount) {
+          this.key.push(null);
+        }
       }
     }
 
@@ -1441,13 +1476,14 @@ OTHER DEALINGS IN THE SOFTWARE.
 
   this.Wonkavision.Cellset = Cellset = (function() {
     function Cellset(data, query) {
-      var a, axis, cell, f, filters, i, index, name, slicer, startIndex, _i, _j, _len, _len1, _ref, _ref1;
+      var a, axis, c, cell, f, filters, i, index, name, slicer, _i, _j, _len, _len1, _ref, _ref1, _ref2;
 
       if (data == null) {
         data = {};
       }
       this.query = query != null ? query : null;
       this.cube = data.cube || null;
+      this.includeTotals = !!((_ref = this.query) != null ? _ref.includeTotals : void 0);
       slicer = data.slicer || [];
       filters = data.filters || [];
       this.slicer = (function() {
@@ -1470,31 +1506,33 @@ OTHER DEALINGS IN THE SOFTWARE.
         }
         return _results;
       })();
-      this.totals = new Cell(this, data.totals);
       this.measureNames = data.measure_names || [];
-      startIndex = 0;
+      this.levelCount = 0;
       this.axes = (function() {
-        var _i, _ref, _results;
+        var _i, _ref1, _results;
 
         _results = [];
-        for (i = _i = 0, _ref = data.axes.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+        for (i = _i = 0, _ref1 = data.axes.length; 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
           axis = data.axes[i];
           name = Wonkavision.AXIS_NAMES[i];
-          a = new Axis(name, this, axis, startIndex);
-          startIndex = a.endIndex + 1;
+          a = new Axis(name, this, axis, this.levelCount);
+          this.levelCount = a.endIndex + 1;
           _results.push(a);
         }
         return _results;
       }).call(this);
       this.cells = {};
-      _ref = data.cells || [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        cell = _ref[_i];
-        this.cells[cell.key] = new Cell(this, cell);
+      this.totals = new Cell(this, data.totals);
+      this.cells[this.totals.key] = this.totals;
+      _ref1 = data.cells || [];
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        cell = _ref1[_i];
+        c = new Cell(this, cell);
+        this.cells[c.key] = c;
       }
-      _ref1 = Wonkavision.AXIS_NAMES;
-      for (index = _j = 0, _len1 = _ref1.length; _j < _len1; index = ++_j) {
-        axis = _ref1[index];
+      _ref2 = Wonkavision.AXIS_NAMES;
+      for (index = _j = 0, _len1 = _ref2.length; _j < _len1; index = ++_j) {
+        axis = _ref2[index];
         this[axis] = this.axes[index];
       }
     }
@@ -1876,7 +1914,7 @@ OTHER DEALINGS IN THE SOFTWARE.
         chr = thead.selectAll("tr.wv-col").data(this.filterColHeaders(colMembers)).enter().append("tr").attr("class", "wv-col");
         fillSpan = this.pivot.rows.dimensions.length + (this.pivot.measuresAxis === "rows" && !this.suppressMeasureHeaders ? 1 : 0);
         chr.append("th").attr("colspan", fillSpan);
-        return ch = chr.selectAll("td.wv-col-header").data((function(d) {
+        return ch = chr.selectAll("th.wv-col-header").data((function(d) {
           return d;
         }), function(d) {
           return d.key.toString();

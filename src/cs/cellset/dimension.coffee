@@ -6,6 +6,11 @@ this.Wonkavision.Dimension = class Dimension
     @members = _.sortBy(
     	_.map(data.members, (mem) => new Member(this, mem)),
     	(member) -> member.sort
-    )  
+    )
+    if @axis.cellset.includeTotals
+      @members.push new Member(this, {key:null, caption:"#{@name}_total", totals:true})
+
+  sortBy : (sortFunc) ->
+    @members = _.sortBy(@members, sortFunc)  
   
   

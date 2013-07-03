@@ -4,7 +4,8 @@ this.Wonkavision.Member = class Member
     @caption = data.caption || @key
     @sort = data.sort || @caption
     @attributes = data.attributes || {}
+    @totals = !!data.totals
   
-  toString : -> key.toString()
+  toString : -> key?.toString() || "<null>"
 
   toKey : -> key

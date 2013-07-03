@@ -8,10 +8,11 @@
       this.caption = data.caption || this.key;
       this.sort = data.sort || this.caption;
       this.attributes = data.attributes || {};
+      this.totals = !!data.totals;
     }
 
     Member.prototype.toString = function() {
-      return key.toString();
+      return (typeof key !== "undefined" && key !== null ? key.toString() : void 0) || "<null>";
     };
 
     Member.prototype.toKey = function() {

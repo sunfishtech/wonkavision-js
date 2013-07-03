@@ -89,13 +89,15 @@ this.Wonkavision.PivotTable.TableRow = class TableRow
 
 #---Table Cell------------------------------
 this.Wonkavision.PivotTable.TableCell = class TableCell
-  constructor: (@row, @keyMembers, @measureName) ->
+  constructor: (@row, keyMembers, @measureName) ->
+    @keyMembers = keyMembers.slice(0)
     @pivot = @row.pivot
     @cell = @cellFor(@keyMembers)
     @measureName ||= @findMeasureName(@keyMembers)
     @measure = @cell?[@measureName]
     @value = @measure?.value
     @formattedValue = @measure?.formattedValue
+    @totalsCell = !!_.detect @keyMembers, (m) -> m.totals
 
   cellFor: (keyMembers) ->
     cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), (m) -> m.keyIndex), (m) -> m.cellKey()))
@@ -120,7 +122,8 @@ this.Wonkavision.PivotTable.ChartCell = class ChartCell
         data : @seriesFromMember keyMembers, seriesMember
 
   seriesFromMeasure : (keyMembers, measureName) ->
-    _.map @pivot.xAxisDimension.members, (x) =>
+    members = _.select @pivot.xAxisDimension.members, (m) -> m.key?
+    _.map members, (x) =>
       xMember = Member.fromDimensionMember(x)
       pivotMember = new MeasureMember(measureName, xMember)
       key = keyMembers.concat [pivotMember]
@@ -129,7 +132,8 @@ this.Wonkavision.PivotTable.ChartCell = class ChartCell
 
   seriesFromMember : (keyMembers, member) ->
     pivotMember = Member.fromDimensionMember(member)
-    _.map @pivot.xAxisDimension.members, (x) =>
+    members = _.select @pivot.xAxisDimension.members, (m) -> m.key?
+    _.map members, (x) =>
       xMember = Member.fromDimensionMember(x)
       key = keyMembers.concat [pivotMember, xMember]
       x : x.key
@@ -168,7 +172,8 @@ this.Wonkavision.PivotTable.Axis = class Axis
 
 #----- Member -----------------------
 this.Wonkavision.PivotTable.Member = class Member
-  constructor : (@key, @parent, @keyIndex, @member) ->
+  constructor : (key, @parent, @keyIndex, @member) ->
+    @key = key
     @axis = if @parent?.axis? then @parent.axis else @parent
     @caption = @member.caption
     @depth = if @axis then @keyIndex - @axis.startIndex else 0
@@ -176,6 +181,7 @@ this.Wonkavision.PivotTable.Member = class Member
     @isEmpty = true
     @isLeaf = if @axis then (@keyIndex == @axis.endIndex) else 0
     @members = new MemberCollection() unless @isLeaf
+    @totals = @member.totals
 
   cellKey : -> @key
 
@@ -186,7 +192,7 @@ this.Wonkavision.PivotTable.Member = class Member
     @member.isEmpty = false
     unless @isLeaf
       childIndex = @keyIndex + 1
-      childKey = cell.key[@axis.startIndex..childIndex]
+      childKey = cell.key[@axis.startIndex..childIndex]  
       child = @members.get(childKey)
       child.registerCell(cell) if child
 
@@ -206,7 +212,9 @@ this.Wonkavision.PivotTable.MeasureMember = class MeasureMember extends Member
     parentMember.isLeaf = false
     @isMeasure = true
     @keyIndex = parentMember.keyIndex
-  
+    @member = parentMember.member
+    @totals = @member.totals
+      
   cellKey : -> @key[0..-2]
 
 #----- Member Collection ----------------------------------
@@ -216,7 +224,11 @@ this.Wonkavision.PivotTable.MemberCollection = class MemberCollection
     @length = 0
     _.each members, (level) => @push(level)
 
-  get : (key) -> _.find @members, (l) -> l.key.toString() == key.toString()
+  get : (key) ->
+    _.find @members, (l) => @compareKeys(l.key, key)
+
+  compareKeys: (left, right) ->
+    left.toString() == right.toString()
 
   push : (level) ->
     @invalidateCache()
@@ -262,7 +274,7 @@ this.Wonkavision.PivotTable.MemberCollection = class MemberCollection
         memo.push [level]
       memo
 
-    _.reduce members, reducer, [[]]
+     _.reduce members, reducer, [[]]
 
   partitionV : (nonEmpty) ->
     nonEmpty = @isNonEmpty unless nonEmpty?

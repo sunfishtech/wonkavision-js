@@ -23,6 +23,7 @@ this.Wonkavision.Query = class Query
     @order(query.order) if query.order?
     @attributes(query.attributes) if query.attributes?
     @top(query.top) if query.top?
+    @includeTotals = !!query.includeTotals
     @originalQuery = query
 
 

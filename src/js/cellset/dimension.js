@@ -15,7 +15,18 @@
       }), function(member) {
         return member.sort;
       });
+      if (this.axis.cellset.includeTotals) {
+        this.members.push(new Member(this, {
+          key: null,
+          caption: "" + this.name + "_total",
+          totals: true
+        }));
+      }
     }
+
+    Dimension.prototype.sortBy = function(sortFunc) {
+      return this.members = _.sortBy(this.members, sortFunc);
+    };
 
     return Dimension;
 

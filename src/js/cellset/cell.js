@@ -16,7 +16,10 @@
           measure = _ref[_i];
           this.addMeasure(measure);
         }
-        this.key = data.key;
+        this.key = data.key.slice(0);
+        while (this.key.length < this.cellset.levelCount) {
+          this.key.push(null);
+        }
       }
     }
 

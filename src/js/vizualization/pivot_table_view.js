@@ -95,7 +95,7 @@
         chr = thead.selectAll("tr.wv-col").data(this.filterColHeaders(colMembers)).enter().append("tr").attr("class", "wv-col");
         fillSpan = this.pivot.rows.dimensions.length + (this.pivot.measuresAxis === "rows" && !this.suppressMeasureHeaders ? 1 : 0);
         chr.append("th").attr("colspan", fillSpan);
-        return ch = chr.selectAll("td.wv-col-header").data((function(d) {
+        return ch = chr.selectAll("th.wv-col-header").data((function(d) {
           return d;
         }), function(d) {
           return d.key.toString();

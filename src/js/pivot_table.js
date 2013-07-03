@@ -165,14 +165,17 @@
       var _ref, _ref1, _ref2;
 
       this.row = row;
-      this.keyMembers = keyMembers;
       this.measureName = measureName;
+      this.keyMembers = keyMembers.slice(0);
       this.pivot = this.row.pivot;
       this.cell = this.cellFor(this.keyMembers);
       this.measureName || (this.measureName = this.findMeasureName(this.keyMembers));
       this.measure = (_ref = this.cell) != null ? _ref[this.measureName] : void 0;
       this.value = (_ref1 = this.measure) != null ? _ref1.value : void 0;
       this.formattedValue = (_ref2 = this.measure) != null ? _ref2.formattedValue : void 0;
+      this.totalsCell = !!_.detect(this.keyMembers, function(m) {
+        return m.totals;
+      });
     }
 
     TableCell.prototype.cellFor = function(keyMembers) {
@@ -227,9 +230,13 @@
     }
 
     ChartCell.prototype.seriesFromMeasure = function(keyMembers, measureName) {
-      var _this = this;
+      var members,
+        _this = this;
 
-      return _.map(this.pivot.xAxisDimension.members, function(x) {
+      members = _.select(this.pivot.xAxisDimension.members, function(m) {
+        return m.key != null;
+      });
+      return _.map(members, function(x) {
         var key, pivotMember, xMember;
 
         xMember = Member.fromDimensionMember(x);
@@ -243,11 +250,14 @@
     };
 
     ChartCell.prototype.seriesFromMember = function(keyMembers, member) {
-      var pivotMember,
+      var members, pivotMember,
         _this = this;
 
       pivotMember = Member.fromDimensionMember(member);
-      return _.map(this.pivot.xAxisDimension.members, function(x) {
+      members = _.select(this.pivot.xAxisDimension.members, function(m) {
+        return m.key != null;
+      });
+      return _.map(members, function(x) {
         var key, xMember;
 
         xMember = Member.fromDimensionMember(x);
@@ -328,10 +338,10 @@
     function Member(key, parent, keyIndex, member) {
       var _ref;
 
-      this.key = key;
       this.parent = parent;
       this.keyIndex = keyIndex;
       this.member = member;
+      this.key = key;
       this.axis = ((_ref = this.parent) != null ? _ref.axis : void 0) != null ? this.parent.axis : this.parent;
       this.caption = this.member.caption;
       this.depth = this.axis ? this.keyIndex - this.axis.startIndex : 0;
@@ -340,6 +350,7 @@
       if (!this.isLeaf) {
         this.members = new MemberCollection();
       }
+      this.totals = this.member.totals;
     }
 
     Member.prototype.cellKey = function() {
@@ -395,6 +406,8 @@
       parentMember.isLeaf = false;
       this.isMeasure = true;
       this.keyIndex = parentMember.keyIndex;
+      this.member = parentMember.member;
+      this.totals = this.member.totals;
     }
 
     MeasureMember.prototype.cellKey = function() {
@@ -421,9 +434,15 @@
     }
 
     MemberCollection.prototype.get = function(key) {
+      var _this = this;
+
       return _.find(this.members, function(l) {
-        return l.key.toString() === key.toString();
+        return _this.compareKeys(l.key, key);
       });
+    };
+
+    MemberCollection.prototype.compareKeys = function(left, right) {
+      return left.toString() === right.toString();
     };
 
     MemberCollection.prototype.push = function(level) {

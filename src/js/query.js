@@ -52,6 +52,7 @@
       if (query.top != null) {
         this.top(query.top);
       }
+      this.includeTotals = !!query.includeTotals;
       this.originalQuery = query;
     }
 
