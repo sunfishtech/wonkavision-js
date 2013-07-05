@@ -97,7 +97,7 @@ this.Wonkavision.PivotTable.TableCell = class TableCell
     @measure = @cell?[@measureName]
     @value = @measure?.value
     @formattedValue = @measure?.formattedValue
-    @totalsCell = !!_.detect @keyMembers, (m) -> m.totals
+    @totalsCell = !!_.detect @keyMembers, (m) -> m?.totals
 
   cellFor: (keyMembers) ->
     cellKey = _.flatten(_.map(_.sortBy(_.compact(keyMembers), (m) -> m.keyIndex), (m) -> m.cellKey()))

@@ -116,11 +116,20 @@ OTHER DEALINGS IN THE SOFTWARE.
       }
       return parseInt(moment(date).format("YYYYMMDD"));
     },
+    rangeToKeys: function(dateRange) {
+      return _.map(dateRange, this.dateToKey);
+    },
     beginningOfMonth: function(date) {
       if (date == null) {
         date = new Date();
       }
-      return moment(date).date(1)._d;
+      return moment(date).startOf('month')._d;
+    },
+    endOfMonth: function(date) {
+      if (date == null) {
+        date = new Date();
+      }
+      return moment(date).endOf('month')._d;
     },
     quarter: function(date) {
       if (date == null) {
@@ -152,7 +161,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       }
       range = [startDate, endDate];
       if (toKeys) {
-        return _.map(range, this.dateToKey);
+        return this.rangeToKeys(range);
       } else {
         return range;
       }
@@ -170,6 +179,9 @@ OTHER DEALINGS IN THE SOFTWARE.
     mtd: function(startDate, toKeys) {
       var end, start;
 
+      if (startDate == null) {
+        startDate = new Date();
+      }
       if (toKeys == null) {
         toKeys = false;
       }
@@ -180,6 +192,9 @@ OTHER DEALINGS IN THE SOFTWARE.
     ytd: function(startDate, toKeys) {
       var end, start;
 
+      if (startDate == null) {
+        startDate = new Date();
+      }
       if (toKeys == null) {
         toKeys = false;
       }
@@ -190,12 +205,27 @@ OTHER DEALINGS IN THE SOFTWARE.
     qtd: function(startDate, toKeys) {
       var end, start;
 
+      if (startDate == null) {
+        startDate = new Date();
+      }
       if (toKeys == null) {
         toKeys = false;
       }
       start = this.beginningOfQuarter(startDate);
       end = startDate;
       return this.dateRange(start, end, toKeys);
+    },
+    lastMonth: function(startDate, toKeys) {
+      var start;
+
+      if (startDate == null) {
+        startDate = new Date();
+      }
+      if (toKeys == null) {
+        toKeys = false;
+      }
+      start = moment(start).add("months", -1);
+      return this.dateRange(this.beginningOfMonth(start), this.endOfMonth(start), toKeys);
     }
   };
 
@@ -473,7 +503,6 @@ OTHER DEALINGS IN THE SOFTWARE.
       }
       this.listDelimiter = query.listDelimiter || "|";
       this.axes = [];
-      this.filters = [];
       this.selectedMeasures = [];
       this.order_by_attributes = [];
       this.selected_attributes = [];
@@ -485,6 +514,7 @@ OTHER DEALINGS IN THE SOFTWARE.
           this[axis](query[axis]);
         }
       }
+      this.filters = query.filters || [];
       if (query.measures != null) {
         this.measures(query.measures);
       }
@@ -900,7 +930,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.value = (_ref1 = this.measure) != null ? _ref1.value : void 0;
       this.formattedValue = (_ref2 = this.measure) != null ? _ref2.formattedValue : void 0;
       this.totalsCell = !!_.detect(this.keyMembers, function(m) {
-        return m.totals;
+        return m != null ? m.totals : void 0;
       });
     }
 
@@ -1424,16 +1454,21 @@ OTHER DEALINGS IN THE SOFTWARE.
 }).call(this);
 
 (function() {
-  var Cell, Measure;
+  var Cell, Filter, Measure;
 
   Measure = this.Wonkavision.Measure;
 
+  Filter = this.Wonkavision.Filter;
+
   this.Wonkavision.Cell = Cell = (function() {
     function Cell(cellset, data) {
-      var measure, _i, _len, _ref;
+      var measure, _i, _len, _ref,
+        _this = this;
 
       this.cellset = cellset;
       this.measures = {};
+      this.dimensions = [];
+      this.filters = [];
       this.empty = true;
       if (data) {
         _ref = data.measures;
@@ -1445,6 +1480,12 @@ OTHER DEALINGS IN THE SOFTWARE.
         while (this.key.length < this.cellset.levelCount) {
           this.key.push(null);
         }
+        this.dimensions = data.dimensions || [];
+        this.filters = _.map(this.dimensions, function(dim, idx) {
+          return new Filter(dim, {
+            value: _.compact(_this.key)[idx]
+          });
+        });
       }
     }
 

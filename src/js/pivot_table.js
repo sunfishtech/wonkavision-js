@@ -174,7 +174,7 @@
       this.value = (_ref1 = this.measure) != null ? _ref1.value : void 0;
       this.formattedValue = (_ref2 = this.measure) != null ? _ref2.formattedValue : void 0;
       this.totalsCell = !!_.detect(this.keyMembers, function(m) {
-        return m.totals;
+        return m != null ? m.totals : void 0;
       });
     }
 

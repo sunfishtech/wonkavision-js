@@ -21,11 +21,20 @@
       }
       return parseInt(moment(date).format("YYYYMMDD"));
     },
+    rangeToKeys: function(dateRange) {
+      return _.map(dateRange, this.dateToKey);
+    },
     beginningOfMonth: function(date) {
       if (date == null) {
         date = new Date();
       }
-      return moment(date).date(1)._d;
+      return moment(date).startOf('month')._d;
+    },
+    endOfMonth: function(date) {
+      if (date == null) {
+        date = new Date();
+      }
+      return moment(date).endOf('month')._d;
     },
     quarter: function(date) {
       if (date == null) {
@@ -57,7 +66,7 @@
       }
       range = [startDate, endDate];
       if (toKeys) {
-        return _.map(range, this.dateToKey);
+        return this.rangeToKeys(range);
       } else {
         return range;
       }
@@ -75,6 +84,9 @@
     mtd: function(startDate, toKeys) {
       var end, start;
 
+      if (startDate == null) {
+        startDate = new Date();
+      }
       if (toKeys == null) {
         toKeys = false;
       }
@@ -85,6 +97,9 @@
     ytd: function(startDate, toKeys) {
       var end, start;
 
+      if (startDate == null) {
+        startDate = new Date();
+      }
       if (toKeys == null) {
         toKeys = false;
       }
@@ -95,12 +110,27 @@
     qtd: function(startDate, toKeys) {
       var end, start;
 
+      if (startDate == null) {
+        startDate = new Date();
+      }
       if (toKeys == null) {
         toKeys = false;
       }
       start = this.beginningOfQuarter(startDate);
       end = startDate;
       return this.dateRange(start, end, toKeys);
+    },
+    lastMonth: function(startDate, toKeys) {
+      var start;
+
+      if (startDate == null) {
+        startDate = new Date();
+      }
+      if (toKeys == null) {
+        toKeys = false;
+      }
+      start = moment(start).add("months", -1);
+      return this.dateRange(this.beginningOfMonth(start), this.endOfMonth(start), toKeys);
     }
   };
 

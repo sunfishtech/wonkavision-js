@@ -9,7 +9,6 @@ this.Wonkavision.Query = class Query
 
     @listDelimiter = query.listDelimiter || "|"
     @axes = []
-    @filters = []
     @selectedMeasures = []
     @order_by_attributes = []
     @selected_attributes = []
@@ -17,6 +16,8 @@ this.Wonkavision.Query = class Query
 
     for axis in Wonkavision.AXIS_NAMES
       this[axis](query[axis]) if query[axis]?
+
+    @filters = query.filters || []
     @measures(query.measures) if query.measures?
     @where(query.where) if query.where?
     @from(query.from) if query.from?

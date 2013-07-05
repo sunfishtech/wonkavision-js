@@ -9,8 +9,14 @@ this.Wonkavision.Utilities =
   dateToKey : (date = moment()) ->
     parseInt(moment(date).format("YYYYMMDD"))
 
+  rangeToKeys : (dateRange) ->
+    _.map dateRange, @dateToKey
+
   beginningOfMonth:(date = new Date()) ->
-    moment(date).date(1)._d
+    moment(date).startOf('month')._d
+
+  endOfMonth:(date = new Date()) ->
+    moment(date).endOf('month')._d
 
   quarter:(date = new Date()) ->
     parseInt(moment(date).month() / 3) + 1
@@ -25,27 +31,32 @@ this.Wonkavision.Utilities =
 
   dateRange: (startDate, endDate, toKeys = false) ->
     range = [startDate, endDate]
-    if toKeys then _.map range, @dateToKey else range
+    if toKeys then @rangeToKeys range else range
 
   timeWindow: (startDate, period, windowSize, toKeys = false) ->
     start = moment(startDate).add(period, windowSize * -1)._d
     end = moment(startDate)
     @dateRange(start, end, toKeys)
 
-  mtd: (startDate, toKeys = false) ->
+  mtd: (startDate = new Date(), toKeys = false) ->
     start = @beginningOfMonth(startDate)
     end = startDate
     @dateRange(start, end, toKeys)
 
-  ytd: (startDate, toKeys = false) ->
+  ytd: (startDate = new Date(), toKeys = false) ->
     start = @beginningOfYear(startDate)
     end = startDate
     @dateRange(start, end, toKeys)
 
-  qtd: (startDate, toKeys = false) ->
+  qtd: (startDate = new Date(), toKeys = false) ->
     start = @beginningOfQuarter(startDate)
     end = startDate
     @dateRange(start, end, toKeys)
+
+  lastMonth: (startDate = new Date(), toKeys = false) ->
+    start = moment(start).add("months",-1)
+    @dateRange(@beginningOfMonth(start), @endOfMonth(start), toKeys)
+
 
 
 

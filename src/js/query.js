@@ -22,7 +22,6 @@
       }
       this.listDelimiter = query.listDelimiter || "|";
       this.axes = [];
-      this.filters = [];
       this.selectedMeasures = [];
       this.order_by_attributes = [];
       this.selected_attributes = [];
@@ -34,6 +33,7 @@
           this[axis](query[axis]);
         }
       }
+      this.filters = query.filters || [];
       if (query.measures != null) {
         this.measures(query.measures);
       }
