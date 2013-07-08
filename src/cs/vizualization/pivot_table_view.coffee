@@ -57,7 +57,9 @@ this.Wonkavision.PivotTableView = class PivotTableView
       colnames = _.map @pivot.axes[0].dimensions, (dim) -> dim.name
       colnames = colnames.concat @pivot.cellset.measureNames
       thead = tableSelection.append("thead")
-      hrow = thead.append("tr").attr("class","wv-col")
+      hrow = thead.append("tr")
+        .classed("wv-col",true)
+
       hrow.selectAll("th.wv-col-header")
         .data(colnames)
         .enter().append("th")
@@ -80,12 +82,15 @@ this.Wonkavision.PivotTableView = class PivotTableView
         .text((level) => @formatLabel(level.caption))
         .attr("colspan", (d) => @memberSpan(d))
         .attr("class", "wv-col-header")
+        .classed("wv-totals", (d) -> d.totals)
 
   renderTableData : (tableSelection) ->
     tbody = tableSelection.append("tbody")
     rhr = tbody.selectAll("tr.wv-row")
       .data(@dataTable.rows)
-      .enter().append("tr").attr("class", "wv-row")
+      .enter().append("tr")
+        .classed("wv-row",true)
+        .classed("wv-totals", (tr) -> tr.totalsRow)
 
     rh = rhr.selectAll("th.wv-row-header")
       .data(((row) => @filterRowHeaders(row.rowMembers)), (member) -> member.key.toString())
@@ -93,12 +98,15 @@ this.Wonkavision.PivotTableView = class PivotTableView
       .text((level) => @formatLabel(level.caption))
       .attr("rowspan", (d) => @memberSpan(d))
       .attr("class","wv-row-header")
+      .classed("wv-totals", (d) -> d.totals)
 
     self = this
     cell = rhr.selectAll("td.wv-cell")
       .data((row) => row.cells)
       .enter().append("td")
-      .attr("class","wv-cell")
+      .classed("wv-cell", true)
+      .classed("wv-totals", (tc) -> tc.totalsCell)
+
 
     if @viewType == "text"
       cell.each((data,idx) -> self.renderCell(data, idx, this))
@@ -120,7 +128,9 @@ this.Wonkavision.PivotTableView = class PivotTableView
 
   renderCell : (tableCell, idx, cell) ->
     @renderer ||= (tableCell, idx, cell) =>
-      d3.select(cell).text((tc) => @formatData(tc))
+      d3.select(cell).
+        attr("data-wv-filters",tableCell.cell?.filters.join(",")).
+        text((tc) => @formatData(tc))
     @renderer(tableCell, idx, cell)
 
   renderGraph : (chartCell, idx, cell) ->

@@ -138,7 +138,10 @@
       this.rowMembers = rowMembers;
       this.pivot = this.table.pivot;
       this.cells = [];
-      this.rowMember = _.isArray(this.rowMembers) ? _.last(this.rowMembers) : this.rowMembersr;
+      this.rowMember = _.isArray(this.rowMembers) ? _.last(this.rowMembers) : this.rowMembers;
+      this.totalsRow = !!_.detect(this.rowMember, function(m) {
+        return m != null ? m.totals : void 0;
+      });
       if (this.pivot.isFlat && this.pivot.measuresAxis === "rows") {
         _.map(this.pivot.cellset.measureNames, function(m) {
           return _this.addCell([_this.rowMember], m);

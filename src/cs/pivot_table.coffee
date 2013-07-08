@@ -72,7 +72,8 @@ this.Wonkavision.PivotTable.TableRow = class TableRow
   constructor: (@table, @rowMembers) ->
     @pivot = @table.pivot
     @cells = []
-    @rowMember = if _.isArray(@rowMembers) then _.last(@rowMembers) else @rowMembersr
+    @rowMember = if _.isArray(@rowMembers) then _.last(@rowMembers) else @rowMembers
+    @totalsRow = !!_.detect @rowMember, (m) -> m?.totals
 
     if @pivot.isFlat && @pivot.measuresAxis == "rows"
       _.map @pivot.cellset.measureNames, (m) =>

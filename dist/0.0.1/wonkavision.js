@@ -894,7 +894,10 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.rowMembers = rowMembers;
       this.pivot = this.table.pivot;
       this.cells = [];
-      this.rowMember = _.isArray(this.rowMembers) ? _.last(this.rowMembers) : this.rowMembersr;
+      this.rowMember = _.isArray(this.rowMembers) ? _.last(this.rowMembers) : this.rowMembers;
+      this.totalsRow = !!_.detect(this.rowMember, function(m) {
+        return m != null ? m.totals : void 0;
+      });
       if (this.pivot.isFlat && this.pivot.measuresAxis === "rows") {
         _.map(this.pivot.cellset.measureNames, function(m) {
           return _this.addCell([_this.rowMember], m);
@@ -1945,7 +1948,7 @@ OTHER DEALINGS IN THE SOFTWARE.
         });
         colnames = colnames.concat(this.pivot.cellset.measureNames);
         thead = tableSelection.append("thead");
-        hrow = thead.append("tr").attr("class", "wv-col");
+        hrow = thead.append("tr").classed("wv-col", true);
         return hrow.selectAll("th.wv-col-header").data(colnames).enter().append("th").text(function(name) {
           return _this.formatLabel(name);
         });
@@ -1963,7 +1966,9 @@ OTHER DEALINGS IN THE SOFTWARE.
           return _this.formatLabel(level.caption);
         }).attr("colspan", function(d) {
           return _this.memberSpan(d);
-        }).attr("class", "wv-col-header");
+        }).attr("class", "wv-col-header").classed("wv-totals", function(d) {
+          return d.totals;
+        });
       }
     };
 
@@ -1972,7 +1977,9 @@ OTHER DEALINGS IN THE SOFTWARE.
         _this = this;
 
       tbody = tableSelection.append("tbody");
-      rhr = tbody.selectAll("tr.wv-row").data(this.dataTable.rows).enter().append("tr").attr("class", "wv-row");
+      rhr = tbody.selectAll("tr.wv-row").data(this.dataTable.rows).enter().append("tr").classed("wv-row", true).classed("wv-totals", function(tr) {
+        return tr.totalsRow;
+      });
       rh = rhr.selectAll("th.wv-row-header").data((function(row) {
         return _this.filterRowHeaders(row.rowMembers);
       }), function(member) {
@@ -1981,11 +1988,15 @@ OTHER DEALINGS IN THE SOFTWARE.
         return _this.formatLabel(level.caption);
       }).attr("rowspan", function(d) {
         return _this.memberSpan(d);
-      }).attr("class", "wv-row-header");
+      }).attr("class", "wv-row-header").classed("wv-totals", function(d) {
+        return d.totals;
+      });
       self = this;
       cell = rhr.selectAll("td.wv-cell").data(function(row) {
         return row.cells;
-      }).enter().append("td").attr("class", "wv-cell");
+      }).enter().append("td").classed("wv-cell", true).classed("wv-totals", function(tc) {
+        return tc.totalsCell;
+      });
       if (this.viewType === "text") {
         return cell.each(function(data, idx) {
           return self.renderCell(data, idx, this);
@@ -2022,7 +2033,9 @@ OTHER DEALINGS IN THE SOFTWARE.
       var _this = this;
 
       this.renderer || (this.renderer = function(tableCell, idx, cell) {
-        return d3.select(cell).text(function(tc) {
+        var _ref;
+
+        return d3.select(cell).attr("data-wv-filters", (_ref = tableCell.cell) != null ? _ref.filters.join(",") : void 0).text(function(tc) {
           return _this.formatData(tc);
         });
       });

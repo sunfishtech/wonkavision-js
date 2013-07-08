@@ -85,7 +85,7 @@
         });
         colnames = colnames.concat(this.pivot.cellset.measureNames);
         thead = tableSelection.append("thead");
-        hrow = thead.append("tr").attr("class", "wv-col");
+        hrow = thead.append("tr").classed("wv-col", true);
         return hrow.selectAll("th.wv-col-header").data(colnames).enter().append("th").text(function(name) {
           return _this.formatLabel(name);
         });
@@ -103,7 +103,9 @@
           return _this.formatLabel(level.caption);
         }).attr("colspan", function(d) {
           return _this.memberSpan(d);
-        }).attr("class", "wv-col-header");
+        }).attr("class", "wv-col-header").classed("wv-totals", function(d) {
+          return d.totals;
+        });
       }
     };
 
@@ -112,7 +114,9 @@
         _this = this;
 
       tbody = tableSelection.append("tbody");
-      rhr = tbody.selectAll("tr.wv-row").data(this.dataTable.rows).enter().append("tr").attr("class", "wv-row");
+      rhr = tbody.selectAll("tr.wv-row").data(this.dataTable.rows).enter().append("tr").classed("wv-row", true).classed("wv-totals", function(tr) {
+        return tr.totalsRow;
+      });
       rh = rhr.selectAll("th.wv-row-header").data((function(row) {
         return _this.filterRowHeaders(row.rowMembers);
       }), function(member) {
@@ -121,11 +125,15 @@
         return _this.formatLabel(level.caption);
       }).attr("rowspan", function(d) {
         return _this.memberSpan(d);
-      }).attr("class", "wv-row-header");
+      }).attr("class", "wv-row-header").classed("wv-totals", function(d) {
+        return d.totals;
+      });
       self = this;
       cell = rhr.selectAll("td.wv-cell").data(function(row) {
         return row.cells;
-      }).enter().append("td").attr("class", "wv-cell");
+      }).enter().append("td").classed("wv-cell", true).classed("wv-totals", function(tc) {
+        return tc.totalsCell;
+      });
       if (this.viewType === "text") {
         return cell.each(function(data, idx) {
           return self.renderCell(data, idx, this);
@@ -162,7 +170,9 @@
       var _this = this;
 
       this.renderer || (this.renderer = function(tableCell, idx, cell) {
-        return d3.select(cell).text(function(tc) {
+        var _ref;
+
+        return d3.select(cell).attr("data-wv-filters", (_ref = tableCell.cell) != null ? _ref.filters.join(",") : void 0).text(function(tc) {
           return _this.formatData(tc);
         });
       });
