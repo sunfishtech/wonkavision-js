@@ -2,8 +2,7 @@
   var RickshawRenderer, _base;
 
   RickshawRenderer = (function() {
-    function RickshawRenderer(pivotView, options) {
-      this.view = pivotView;
+    function RickshawRenderer(options) {
       this.extractArgs(options);
       this.palette = new Rickshaw.Color.Palette({
         scheme: this.colorScheme

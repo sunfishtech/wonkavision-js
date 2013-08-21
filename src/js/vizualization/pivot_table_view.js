@@ -1,7 +1,5 @@
 (function() {
-  var MovingCalculation, PivotTableView, Utilities;
-
-  MovingCalculation = this.Wonkavision.MovingCalculation;
+  var PivotTableView, Utilities;
 
   Utilities = this.Wonkavision.Utilities;
 
@@ -51,15 +49,19 @@
       if (this.smooth) {
         this.smoothingMethod = args.smoothingMethod;
         this.smoothingWindow = args.smoothingWindow || 30;
+        this.smoothingPeriod = args.smoothingPeriod || "days";
+        this.smoothingTransformation = args.smoothingTransformation || null;
+        this.smoothingTreatNullsAsZero = args.smoothingTreatNullsAsZero != null ? args.smoothingTreatNullsAsZero : true;
       }
-      return this.suppressMeasureHeaders = args.suppressMeasureHeaders;
+      this.suppressMeasureHeaders = args.suppressMeasureHeaders;
+      return this.suppressAllHeaders = args.suppressAllHeaders;
     };
 
     PivotTableView.prototype.createRenderer = function(args) {
       var rendererClass;
 
       rendererClass = args.renderer || Wonkavision.renderers["default"] || Wonkavision.renderers.Rickshaw;
-      return new rendererClass(this, args);
+      return new rendererClass(args);
     };
 
     PivotTableView.prototype.memberSpan = function(member) {
@@ -148,7 +150,10 @@
     PivotTableView.prototype.filterRowHeaders = function(levels) {
       var data;
 
-      if (!(levels.length > 0)) {
+      if (this.suppressAllHeaders) {
+        return [];
+      }
+      if (levels.length < 1) {
         return levels;
       }
       data = levels;
@@ -159,6 +164,9 @@
     };
 
     PivotTableView.prototype.filterColHeaders = function(headerRows) {
+      if (this.suppressAllHeaders) {
+        return [];
+      }
       if (this.suppressMeasureHeaders && this.pivot.measuresAxis === "columns") {
         return headerRows.slice(0, -1);
       } else {
@@ -207,30 +215,25 @@
     };
 
     PivotTableView.prototype.prepareSeriesData = function(data) {
-      var calc,
+      var points,
         _this = this;
 
+      points = _.map(data, function(point) {
+        return {
+          x: _this.keyToDate(point.x),
+          y: parseFloat(point.y) || 0
+        };
+      });
       if (this.smoothingMethod != null) {
-        calc = new MovingCalculation({
+        return Utilities.smoothSeries(points, {
           windowSize: this.smoothingWindow,
-          calculation: this.smoothingMethod
-        });
-        _.each(data, function(point) {
-          return calc.add(_this.keyToDate(point.x), parseFloat(point.y || 0));
-        });
-        return _.map(calc.values.slice(this.smoothingWindow), function(point) {
-          return {
-            x: point[0],
-            y: point[1]
-          };
+          windowType: this.smoothingPeriod,
+          calculation: this.smoothingMethod,
+          transformation: this.smoothingTransformation,
+          treatNullsAsZero: this.smoothingTreatNullsAsZero
         });
       } else {
-        return _.map(data, function(point) {
-          return {
-            x: _this.keyToDate(point.x),
-            y: parseFloat(point.y) || 0
-          };
-        });
+        return points;
       }
     };
 

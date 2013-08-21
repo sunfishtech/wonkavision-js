@@ -1,8 +1,13 @@
-this.Wonkavision.Utilities = 
+Wonkavision = this.Wonkavision
+Wonkavision.Utilities = 
 
   keyToDate : (keyStr, unwrap = true) ->
-    keyStr = keyStr.toString()
-    dateStr = "#{keyStr[0..3]}-#{keyStr[4..5]}-#{keyStr[6..7]}"
+    #dates are stored in the DB as 20080501
+    #months are 2008-05
+    #years are 2008
+    #this function should convert each to  a date
+    keyStr = keyStr.toString().replace("-","")
+    dateStr = "#{keyStr[0..3]}-#{keyStr[4..5] || '01'}-#{keyStr[6..7] || '01'}"
     date = moment(dateStr)
     if unwrap then date._d else date
 
@@ -56,6 +61,20 @@ this.Wonkavision.Utilities =
   lastMonth: (startDate = new Date(), toKeys = false) ->
     start = moment(start).add("months",-1)
     @dateRange(@beginningOfMonth(start), @endOfMonth(start), toKeys)
+
+  smoothSeries: (points, opts = {}) ->
+    _.defaults opts,
+      windowSize: 30
+      windowType: "days"
+      calculation: "average"
+      transformation: (val) -> val
+
+    calc = new Wonkavision.MovingCalculation(opts)
+    _.each points, (point) =>
+      calc.add(point.x, point.y)
+    _.map calc.values[opts.windowSize..],(point) ->
+      x:point[0]
+      y:point[1]
 
 
 

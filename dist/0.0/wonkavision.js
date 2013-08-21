@@ -94,15 +94,19 @@ OTHER DEALINGS IN THE SOFTWARE.
 }).call(this);
 
 (function() {
-  this.Wonkavision.Utilities = {
+  var Wonkavision;
+
+  Wonkavision = this.Wonkavision;
+
+  Wonkavision.Utilities = {
     keyToDate: function(keyStr, unwrap) {
       var date, dateStr;
 
       if (unwrap == null) {
         unwrap = true;
       }
-      keyStr = keyStr.toString();
-      dateStr = "" + keyStr.slice(0, 4) + "-" + keyStr.slice(4, 6) + "-" + keyStr.slice(6, 8);
+      keyStr = keyStr.toString().replace("-", "");
+      dateStr = "" + keyStr.slice(0, 4) + "-" + (keyStr.slice(4, 6) || '01') + "-" + (keyStr.slice(6, 8) || '01');
       date = moment(dateStr);
       if (unwrap) {
         return date._d;
@@ -226,6 +230,32 @@ OTHER DEALINGS IN THE SOFTWARE.
       }
       start = moment(start).add("months", -1);
       return this.dateRange(this.beginningOfMonth(start), this.endOfMonth(start), toKeys);
+    },
+    smoothSeries: function(points, opts) {
+      var calc,
+        _this = this;
+
+      if (opts == null) {
+        opts = {};
+      }
+      _.defaults(opts, {
+        windowSize: 30,
+        windowType: "days",
+        calculation: "average",
+        transformation: function(val) {
+          return val;
+        }
+      });
+      calc = new Wonkavision.MovingCalculation(opts);
+      _.each(points, function(point) {
+        return calc.add(point.x, point.y);
+      });
+      return _.map(calc.values.slice(opts.windowSize), function(point) {
+        return {
+          x: point[0],
+          y: point[1]
+        };
+      });
     }
   };
 
@@ -1617,12 +1647,20 @@ OTHER DEALINGS IN THE SOFTWARE.
       }
       options = _.defaults(options, {
         windowSize: 30,
+        windowType: "days",
         calculation: "average",
-        injectMissingDates: true
+        transformation: function(val) {
+          return val;
+        },
+        injectMissingDates: true,
+        treatNullsAsZero: true
       });
       this.windowSize = options.windowSize;
+      this.windowType = options.windowType;
       this.calculation = options.calculation;
       this.injectMissingDates = options.injectMissingDates;
+      this.transformation = options.transformation;
+      this.treatNullsAsZero = options.treatNullsAsZero;
       this.reset();
     }
 
@@ -1647,21 +1685,21 @@ OTHER DEALINGS IN THE SOFTWARE.
       date = moment(date);
       _results = [];
       while ((this.currentDate != null) && this.currentDate < date) {
-        _results.push(this.skipDay());
+        _results.push(this.skip());
       }
       return _results;
     };
 
-    MovingCalculation.prototype.skipDay = function() {
+    MovingCalculation.prototype.skip = function() {
       if (this.injectMissingDates) {
-        return this.addSample(0);
+        return this.addSample(null);
       } else {
-        return this.advanceDay();
+        return this.advance();
       }
     };
 
-    MovingCalculation.prototype.advanceDay = function() {
-      return this.currentDate.add('days', 1);
+    MovingCalculation.prototype.advance = function() {
+      return this.currentDate.add(this.windowType, 1);
     };
 
     MovingCalculation.prototype.addSample = function(value) {
@@ -1670,21 +1708,19 @@ OTHER DEALINGS IN THE SOFTWARE.
         this.samples.pop();
       }
       this.values.push([this.currentDate.clone().unix() * 1000, this.currentValue()]);
-      return this.advanceDay();
+      return this.advance();
     };
 
     MovingCalculation.prototype.currentValue = function() {
-      var reducer, sum;
+      var num, reducer, sum, val;
 
       reducer = function(memo, cur) {
-        return memo + cur;
+        return memo + (cur || 0);
       };
       sum = _.reduce(this.samples, reducer, 0);
-      if (this.calculation === "average") {
-        return sum / this.samples.length;
-      } else {
-        return sum;
-      }
+      num = this.treatNullsAsZero ? this.samples.length : _.compact(this.samples.slice(0)).length;
+      val = this.calculation === "average" ? sum / num : sum;
+      return (typeof this.transformation === "function" ? this.transformation(val) : void 0) || val;
     };
 
     return MovingCalculation;
@@ -1697,8 +1733,7 @@ OTHER DEALINGS IN THE SOFTWARE.
   var RickshawRenderer, _base;
 
   RickshawRenderer = (function() {
-    function RickshawRenderer(pivotView, options) {
-      this.view = pivotView;
+    function RickshawRenderer(options) {
       this.extractArgs(options);
       this.palette = new Rickshaw.Color.Palette({
         scheme: this.colorScheme
@@ -1771,8 +1806,7 @@ OTHER DEALINGS IN THE SOFTWARE.
   var HighchartsRenderer, _base;
 
   HighchartsRenderer = (function() {
-    function HighchartsRenderer(pivotView, options) {
-      this.view = pivotView;
+    function HighchartsRenderer(options) {
       this.extractArgs(options);
     }
 
@@ -1844,13 +1878,6 @@ OTHER DEALINGS IN THE SOFTWARE.
       });
     };
 
-    HighchartsRenderer.prototype.keyToDate = function(keyStr) {
-      var dateStr;
-
-      dateStr = "" + keyStr.slice(0, 4) + "-" + keyStr.slice(4, 6) + "-" + keyStr.slice(6, 8);
-      return moment(dateStr).unix() * 1000;
-    };
-
     return HighchartsRenderer;
 
   })();
@@ -1862,9 +1889,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 }).call(this);
 
 (function() {
-  var MovingCalculation, PivotTableView, Utilities;
-
-  MovingCalculation = this.Wonkavision.MovingCalculation;
+  var PivotTableView, Utilities;
 
   Utilities = this.Wonkavision.Utilities;
 
@@ -1914,15 +1939,19 @@ OTHER DEALINGS IN THE SOFTWARE.
       if (this.smooth) {
         this.smoothingMethod = args.smoothingMethod;
         this.smoothingWindow = args.smoothingWindow || 30;
+        this.smoothingPeriod = args.smoothingPeriod || "days";
+        this.smoothingTransformation = args.smoothingTransformation || null;
+        this.smoothingTreatNullsAsZero = args.smoothingTreatNullsAsZero != null ? args.smoothingTreatNullsAsZero : true;
       }
-      return this.suppressMeasureHeaders = args.suppressMeasureHeaders;
+      this.suppressMeasureHeaders = args.suppressMeasureHeaders;
+      return this.suppressAllHeaders = args.suppressAllHeaders;
     };
 
     PivotTableView.prototype.createRenderer = function(args) {
       var rendererClass;
 
       rendererClass = args.renderer || Wonkavision.renderers["default"] || Wonkavision.renderers.Rickshaw;
-      return new rendererClass(this, args);
+      return new rendererClass(args);
     };
 
     PivotTableView.prototype.memberSpan = function(member) {
@@ -2011,7 +2040,10 @@ OTHER DEALINGS IN THE SOFTWARE.
     PivotTableView.prototype.filterRowHeaders = function(levels) {
       var data;
 
-      if (!(levels.length > 0)) {
+      if (this.suppressAllHeaders) {
+        return [];
+      }
+      if (levels.length < 1) {
         return levels;
       }
       data = levels;
@@ -2022,6 +2054,9 @@ OTHER DEALINGS IN THE SOFTWARE.
     };
 
     PivotTableView.prototype.filterColHeaders = function(headerRows) {
+      if (this.suppressAllHeaders) {
+        return [];
+      }
       if (this.suppressMeasureHeaders && this.pivot.measuresAxis === "columns") {
         return headerRows.slice(0, -1);
       } else {
@@ -2070,30 +2105,25 @@ OTHER DEALINGS IN THE SOFTWARE.
     };
 
     PivotTableView.prototype.prepareSeriesData = function(data) {
-      var calc,
+      var points,
         _this = this;
 
+      points = _.map(data, function(point) {
+        return {
+          x: _this.keyToDate(point.x),
+          y: parseFloat(point.y) || 0
+        };
+      });
       if (this.smoothingMethod != null) {
-        calc = new MovingCalculation({
+        return Utilities.smoothSeries(points, {
           windowSize: this.smoothingWindow,
-          calculation: this.smoothingMethod
-        });
-        _.each(data, function(point) {
-          return calc.add(_this.keyToDate(point.x), parseFloat(point.y || 0));
-        });
-        return _.map(calc.values.slice(this.smoothingWindow), function(point) {
-          return {
-            x: point[0],
-            y: point[1]
-          };
+          windowType: this.smoothingPeriod,
+          calculation: this.smoothingMethod,
+          transformation: this.smoothingTransformation,
+          treatNullsAsZero: this.smoothingTreatNullsAsZero
         });
       } else {
-        return _.map(data, function(point) {
-          return {
-            x: _this.keyToDate(point.x),
-            y: parseFloat(point.y) || 0
-          };
-        });
+        return points;
       }
     };
 

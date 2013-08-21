@@ -1,13 +1,17 @@
 (function() {
-  this.Wonkavision.Utilities = {
+  var Wonkavision;
+
+  Wonkavision = this.Wonkavision;
+
+  Wonkavision.Utilities = {
     keyToDate: function(keyStr, unwrap) {
       var date, dateStr;
 
       if (unwrap == null) {
         unwrap = true;
       }
-      keyStr = keyStr.toString();
-      dateStr = "" + keyStr.slice(0, 4) + "-" + keyStr.slice(4, 6) + "-" + keyStr.slice(6, 8);
+      keyStr = keyStr.toString().replace("-", "");
+      dateStr = "" + keyStr.slice(0, 4) + "-" + (keyStr.slice(4, 6) || '01') + "-" + (keyStr.slice(6, 8) || '01');
       date = moment(dateStr);
       if (unwrap) {
         return date._d;
@@ -131,6 +135,32 @@
       }
       start = moment(start).add("months", -1);
       return this.dateRange(this.beginningOfMonth(start), this.endOfMonth(start), toKeys);
+    },
+    smoothSeries: function(points, opts) {
+      var calc,
+        _this = this;
+
+      if (opts == null) {
+        opts = {};
+      }
+      _.defaults(opts, {
+        windowSize: 30,
+        windowType: "days",
+        calculation: "average",
+        transformation: function(val) {
+          return val;
+        }
+      });
+      calc = new Wonkavision.MovingCalculation(opts);
+      _.each(points, function(point) {
+        return calc.add(point.x, point.y);
+      });
+      return _.map(calc.values.slice(opts.windowSize), function(point) {
+        return {
+          x: point[0],
+          y: point[1]
+        };
+      });
     }
   };
 

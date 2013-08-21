@@ -8,12 +8,20 @@
       }
       options = _.defaults(options, {
         windowSize: 30,
+        windowType: "days",
         calculation: "average",
-        injectMissingDates: true
+        transformation: function(val) {
+          return val;
+        },
+        injectMissingDates: true,
+        treatNullsAsZero: true
       });
       this.windowSize = options.windowSize;
+      this.windowType = options.windowType;
       this.calculation = options.calculation;
       this.injectMissingDates = options.injectMissingDates;
+      this.transformation = options.transformation;
+      this.treatNullsAsZero = options.treatNullsAsZero;
       this.reset();
     }
 
@@ -38,21 +46,21 @@
       date = moment(date);
       _results = [];
       while ((this.currentDate != null) && this.currentDate < date) {
-        _results.push(this.skipDay());
+        _results.push(this.skip());
       }
       return _results;
     };
 
-    MovingCalculation.prototype.skipDay = function() {
+    MovingCalculation.prototype.skip = function() {
       if (this.injectMissingDates) {
-        return this.addSample(0);
+        return this.addSample(null);
       } else {
-        return this.advanceDay();
+        return this.advance();
       }
     };
 
-    MovingCalculation.prototype.advanceDay = function() {
-      return this.currentDate.add('days', 1);
+    MovingCalculation.prototype.advance = function() {
+      return this.currentDate.add(this.windowType, 1);
     };
 
     MovingCalculation.prototype.addSample = function(value) {
@@ -61,21 +69,19 @@
         this.samples.pop();
       }
       this.values.push([this.currentDate.clone().unix() * 1000, this.currentValue()]);
-      return this.advanceDay();
+      return this.advance();
     };
 
     MovingCalculation.prototype.currentValue = function() {
-      var reducer, sum;
+      var num, reducer, sum, val;
 
       reducer = function(memo, cur) {
-        return memo + cur;
+        return memo + (cur || 0);
       };
       sum = _.reduce(this.samples, reducer, 0);
-      if (this.calculation === "average") {
-        return sum / this.samples.length;
-      } else {
-        return sum;
-      }
+      num = this.treatNullsAsZero ? this.samples.length : _.compact(this.samples.slice(0)).length;
+      val = this.calculation === "average" ? sum / num : sum;
+      return (typeof this.transformation === "function" ? this.transformation(val) : void 0) || val;
     };
 
     return MovingCalculation;

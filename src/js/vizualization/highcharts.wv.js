@@ -2,8 +2,7 @@
   var HighchartsRenderer, _base;
 
   HighchartsRenderer = (function() {
-    function HighchartsRenderer(pivotView, options) {
-      this.view = pivotView;
+    function HighchartsRenderer(options) {
       this.extractArgs(options);
     }
 
@@ -73,13 +72,6 @@
       return this.chartArgs.xAxis = _.defaults(this.chartArgs.xAxis || {}, {
         type: 'datetime'
       });
-    };
-
-    HighchartsRenderer.prototype.keyToDate = function(keyStr) {
-      var dateStr;
-
-      dateStr = "" + keyStr.slice(0, 4) + "-" + keyStr.slice(4, 6) + "-" + keyStr.slice(6, 8);
-      return moment(dateStr).unix() * 1000;
     };
 
     return HighchartsRenderer;

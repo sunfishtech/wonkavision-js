@@ -1,6 +1,5 @@
 class RickshawRenderer
-  constructor : (pivotView, options) ->
-    @view = pivotView
+  constructor : (options) ->
     @extractArgs(options)
     @palette = new Rickshaw.Color.Palette scheme : @colorScheme
 

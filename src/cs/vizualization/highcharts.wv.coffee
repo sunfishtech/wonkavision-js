@@ -1,6 +1,5 @@
 class HighchartsRenderer
-  constructor : (pivotView, options) ->
-    @view = pivotView
+  constructor : (options) ->
     @extractArgs(options)
 
   renderGraph : (data, container) ->
@@ -53,10 +52,6 @@ class HighchartsRenderer
 
     @chartArgs.xAxis = _.defaults @chartArgs.xAxis || {},
       type:'datetime'
-
-  keyToDate : (keyStr) ->
-    dateStr = "#{keyStr[0..3]}-#{keyStr[4..5]}-#{keyStr[6..7]}"
-    moment(dateStr).unix()*1000
 
 this.Wonkavision.renderers ||= {}
 this.Wonkavision.renderers.Highcharts = HighchartsRenderer

@@ -1,4 +1,3 @@
-MovingCalculation = this.Wonkavision.MovingCalculation
 Utilities = this.Wonkavision.Utilities
 
 this.Wonkavision.PivotTableView = class PivotTableView
@@ -37,11 +36,14 @@ this.Wonkavision.PivotTableView = class PivotTableView
     if @smooth
       @smoothingMethod = args.smoothingMethod
       @smoothingWindow = args.smoothingWindow || 30
+      @smoothingPeriod = args.smoothingPeriod || "days"
+      @smoothingTransformation = args.smoothingTransformation || null
+      @smoothingTreatNullsAsZero = if args.smoothingTreatNullsAsZero? then args.smoothingTreatNullsAsZero else true
     @suppressMeasureHeaders = args.suppressMeasureHeaders
-
+    @suppressAllHeaders = args.suppressAllHeaders
   createRenderer : (args) ->
     rendererClass = args.renderer || Wonkavision.renderers["default"] || Wonkavision.renderers.Rickshaw
-    new rendererClass(this, args)
+    new rendererClass(args)
   
   memberSpan : (member) -> member.members?.nonEmpty().leaves().length
     
@@ -114,13 +116,16 @@ this.Wonkavision.PivotTableView = class PivotTableView
       cell.each((data, idx) -> self.renderGraph(data, idx, this))
 
   filterRowHeaders: (levels) ->
-    return levels unless levels.length > 0
+    return [] if @suppressAllHeaders
+    return levels if levels.length < 1
+    
     data = levels
     if _.last(data).isMeasure? and @suppressMeasureHeaders
       data = data[0..-2]
     data
 
   filterColHeaders: (headerRows) ->
+    return [] if @suppressAllHeaders
     if @suppressMeasureHeaders && @pivot.measuresAxis == "columns"
       headerRows[0..-2]
     else
@@ -150,19 +155,19 @@ this.Wonkavision.PivotTableView = class PivotTableView
       data: @prepareSeriesData(series.data)
 
   prepareSeriesData: (data) ->
+    points = _.map data, (point) =>
+      x: @keyToDate point.x
+      y: parseFloat(point.y) || 0
+
     if @smoothingMethod?
-      calc = new MovingCalculation
+      Utilities.smoothSeries points,
         windowSize:@smoothingWindow
+        windowType:@smoothingPeriod
         calculation:@smoothingMethod
-      _.each data, (point) =>
-        calc.add(@keyToDate(point.x), parseFloat(point.y||0))
-      _.map calc.values[@smoothingWindow..], (point) ->
-        x: point[0]
-        y: point[1]
+        transformation:@smoothingTransformation
+        treatNullsAsZero:@smoothingTreatNullsAsZero
     else
-      _.map data, (point) =>
-          x: @keyToDate point.x
-          y: parseFloat(point.y) || 0
+      points
 
 
   keyToDate : (keyStr) -> Utilities.keyToDate(keyStr, false).unix()*1000
