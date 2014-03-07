@@ -22,6 +22,7 @@ bundle 'wonkavision.js' do
   file 'filter.js'
   file 'member_ref.js'
   file 'query.js'
+  file 'dimension_query.js'
   file 'pivot_table.js'
   file 'cellset/member.js'
   file 'cellset/dimension.js'

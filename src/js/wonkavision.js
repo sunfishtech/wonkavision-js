@@ -23,6 +23,33 @@
         return new Wonkavision.Query(this, options);
       };
 
+      Client.prototype.dimensionQuery = function(options) {
+        if (options == null) {
+          options = {};
+        }
+        return new Wonkavision.DimensionQuery(this, options);
+      };
+
+      Client.prototype.executeDimension = function(query, options) {
+        var error, path, success,
+          _this = this;
+
+        success = function(data) {
+          var response;
+
+          if (data.json.error != null) {
+            optons.error(data.json.error);
+          } else {
+            response = data.json;
+          }
+          return options.success(response);
+        };
+        error = options.error || function() {};
+        path = "dimension_query";
+        this.get(path, query.toParams(), success, error);
+        return this;
+      };
+
       Client.prototype.execute = function(query, options) {
         var error, path, raw, success,
           _this = this;

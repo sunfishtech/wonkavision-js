@@ -41,6 +41,8 @@ this.Wonkavision.PivotTableView = class PivotTableView
       @smoothingTreatNullsAsZero = if args.smoothingTreatNullsAsZero? then args.smoothingTreatNullsAsZero else true
     @suppressMeasureHeaders = args.suppressMeasureHeaders
     @suppressAllHeaders = args.suppressAllHeaders
+    @seriesTransformation = args.seriesTransformation
+
   createRenderer : (args) ->
     rendererClass = args.renderer || Wonkavision.renderers["default"] || Wonkavision.renderers.Rickshaw
     new rendererClass(args)
@@ -153,6 +155,10 @@ this.Wonkavision.PivotTableView = class PivotTableView
     data = _.map data, (series) =>
       name: @formatLabel(series.name)
       data: @prepareSeriesData(series.data)
+    if @seriesTransformation?
+      @seriesTransformation(data)
+    else
+      data
 
   prepareSeriesData: (data) ->
     points = _.map data, (point) =>

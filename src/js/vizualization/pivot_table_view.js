@@ -54,7 +54,8 @@
         this.smoothingTreatNullsAsZero = args.smoothingTreatNullsAsZero != null ? args.smoothingTreatNullsAsZero : true;
       }
       this.suppressMeasureHeaders = args.suppressMeasureHeaders;
-      return this.suppressAllHeaders = args.suppressAllHeaders;
+      this.suppressAllHeaders = args.suppressAllHeaders;
+      return this.seriesTransformation = args.seriesTransformation;
     };
 
     PivotTableView.prototype.createRenderer = function(args) {
@@ -206,12 +207,17 @@
     PivotTableView.prototype.prepareSeries = function(data) {
       var _this = this;
 
-      return data = _.map(data, function(series) {
+      data = _.map(data, function(series) {
         return {
           name: _this.formatLabel(series.name),
           data: _this.prepareSeriesData(series.data)
         };
       });
+      if (this.seriesTransformation != null) {
+        return this.seriesTransformation(data);
+      } else {
+        return data;
+      }
     };
 
     PivotTableView.prototype.prepareSeriesData = function(data) {

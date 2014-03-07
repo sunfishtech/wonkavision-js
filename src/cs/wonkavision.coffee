@@ -8,6 +8,22 @@ this.Wonkavision = class Wonkavision
     query : (options = {}) ->
       new Wonkavision.Query(this, options)
 
+    dimensionQuery: (options = {}) ->
+      new Wonkavision.DimensionQuery(this, options)
+
+    executeDimension : (query, options) ->
+      success = (data) =>
+        if data.json.error?
+          optons.error(data.json.error)
+        else
+          response = data.json
+        options.success(response)
+
+      error = options.error || () ->
+      path = "dimension_query"
+      @get(path, query.toParams(), success, error)
+      this
+
     execute : (query, options) ->
       raw = options.raw
       success = (data) =>
