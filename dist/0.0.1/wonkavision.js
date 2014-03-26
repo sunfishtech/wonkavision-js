@@ -283,6 +283,21 @@ OTHER DEALINGS IN THE SOFTWARE.
           y: point[1]
         };
       });
+    },
+    sortRows: function(cellset, options) {
+      var columnKey, dir, measureName;
+
+      if (options == null) {
+        options = {};
+      }
+      measureName = options["measureName"] || cellset.measureNames[0];
+      columnKey = options["columnKey"] || null;
+      dir = options["direction"] || 1;
+      return cellset.rows.dimensions[0].sortBy(function(m) {
+        var _ref, _ref1;
+
+        return (((_ref = cellset.cell(columnKey, m.key)) != null ? (_ref1 = _ref.measures[measureName]) != null ? _ref1.value : void 0 : void 0) || 0) * dir;
+      });
     }
   };
 
@@ -1607,16 +1622,32 @@ OTHER DEALINGS IN THE SOFTWARE.
         return member.sort;
       });
       if (this.axis.cellset.includeTotals) {
-        this.members.push(new Member(this, {
-          key: null,
-          caption: "" + this.name + "_total",
-          totals: true
-        }));
+        this.members.push(this.createTotalMember());
       }
     }
 
+    Dimension.prototype.rawMembers = function() {
+      if (this.axis.cellset.includeTotals) {
+        return this.members.slice(0, this.members.length - 1);
+      } else {
+        return this.members;
+      }
+    };
+
     Dimension.prototype.sortBy = function(sortFunc) {
-      return this.members = _.sortBy(this.members, sortFunc);
+      this.members = this.rawMembers();
+      this.members = _.sortBy(this.members, sortFunc);
+      if (this.axis.cellset.includeTotals) {
+        return this.members.push(this.createTotalMember());
+      }
+    };
+
+    Dimension.prototype.createTotalMember = function() {
+      return new Member(this, {
+        key: null,
+        caption: "" + this.name + "_total",
+        totals: true
+      });
     };
 
     return Dimension;

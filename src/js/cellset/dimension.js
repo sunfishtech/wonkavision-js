@@ -16,16 +16,32 @@
         return member.sort;
       });
       if (this.axis.cellset.includeTotals) {
-        this.members.push(new Member(this, {
-          key: null,
-          caption: "" + this.name + "_total",
-          totals: true
-        }));
+        this.members.push(this.createTotalMember());
       }
     }
 
+    Dimension.prototype.rawMembers = function() {
+      if (this.axis.cellset.includeTotals) {
+        return this.members.slice(0, this.members.length - 1);
+      } else {
+        return this.members;
+      }
+    };
+
     Dimension.prototype.sortBy = function(sortFunc) {
-      return this.members = _.sortBy(this.members, sortFunc);
+      this.members = this.rawMembers();
+      this.members = _.sortBy(this.members, sortFunc);
+      if (this.axis.cellset.includeTotals) {
+        return this.members.push(this.createTotalMember());
+      }
+    };
+
+    Dimension.prototype.createTotalMember = function() {
+      return new Member(this, {
+        key: null,
+        caption: "" + this.name + "_total",
+        totals: true
+      });
     };
 
     return Dimension;

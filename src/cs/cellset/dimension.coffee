@@ -8,9 +8,21 @@ this.Wonkavision.Dimension = class Dimension
     	(member) -> member.sort
     )
     if @axis.cellset.includeTotals
-      @members.push new Member(this, {key:null, caption:"#{@name}_total", totals:true})
+      @members.push @createTotalMember()
+
+  rawMembers: ->
+    if @axis.cellset.includeTotals
+      @members.slice(0,@members.length-1)
+    else
+      @members
 
   sortBy : (sortFunc) ->
+    @members = @rawMembers()
     @members = _.sortBy(@members, sortFunc)  
+    if @axis.cellset.includeTotals
+      @members.push(@createTotalMember())
+
+  createTotalMember: -> new Member(this, {key:null, caption:"#{@name}_total", totals:true})
+
   
   

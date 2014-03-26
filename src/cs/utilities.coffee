@@ -76,6 +76,13 @@ Wonkavision.Utilities =
       x:point[0]
       y:point[1]
 
+  sortRows: (cellset, options={}) ->
+    measureName = options["measureName"] || cellset.measureNames[0]
+    columnKey = options["columnKey"] || null
+    dir = options["direction"] || 1
+    cellset.rows.dimensions[0].sortBy (m) ->
+      (cellset.cell(columnKey,m.key)?.measures[measureName]?.value || 0) * dir
+
 
 
 

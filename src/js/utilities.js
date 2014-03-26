@@ -161,6 +161,21 @@
           y: point[1]
         };
       });
+    },
+    sortRows: function(cellset, options) {
+      var columnKey, dir, measureName;
+
+      if (options == null) {
+        options = {};
+      }
+      measureName = options["measureName"] || cellset.measureNames[0];
+      columnKey = options["columnKey"] || null;
+      dir = options["direction"] || 1;
+      return cellset.rows.dimensions[0].sortBy(function(m) {
+        var _ref, _ref1;
+
+        return (((_ref = cellset.cell(columnKey, m.key)) != null ? (_ref1 = _ref.measures[measureName]) != null ? _ref1.value : void 0 : void 0) || 0) * dir;
+      });
     }
   };
 
