@@ -14,6 +14,7 @@ this.Wonkavision.Remote = class Remote
     if settings.ajax
       @prepareUrl(settings)
       settings.ajax.open(settings.type, settings.url, settings.async)
+      settings.ajax.setRequestHeader("Accept","application/json");
       settings.ajax.send(settings.data || null)
 
       @httpData(settings)
@@ -73,7 +74,7 @@ this.Wonkavision.Remote.get = (url, options) ->
 this.Wonkavision.Remote.post = (url, options) ->
   options.url = url
   options.type = "POST"
-  new Remote().xhr()
+  new Remote().xhr(options)
 
         
   

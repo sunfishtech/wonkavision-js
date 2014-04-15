@@ -322,6 +322,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       if (settings.ajax) {
         this.prepareUrl(settings);
         settings.ajax.open(settings.type, settings.url, settings.async);
+        settings.ajax.setRequestHeader("Accept", "application/json");
         settings.ajax.send(settings.data || null);
         return this.httpData(settings);
       }
@@ -413,7 +414,7 @@ OTHER DEALINGS IN THE SOFTWARE.
   this.Wonkavision.Remote.post = function(url, options) {
     options.url = url;
     options.type = "POST";
-    return new Remote().xhr();
+    return new Remote().xhr(options);
   };
 
 }).call(this);
