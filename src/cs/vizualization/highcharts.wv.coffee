@@ -53,5 +53,8 @@ class HighchartsRenderer
     @chartArgs.xAxis = _.defaults @chartArgs.xAxis || {},
       type:'datetime'
 
+    @chartArgs.yAxis = _.defaults @chartArgs.yAxis || {},
+      endOnTick:false
+
 this.Wonkavision.renderers ||= {}
 this.Wonkavision.renderers.Highcharts = HighchartsRenderer

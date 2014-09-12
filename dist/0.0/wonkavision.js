@@ -2102,8 +2102,11 @@ OTHER DEALINGS IN THE SOFTWARE.
           shadow: false
         })
       });
-      return this.chartArgs.xAxis = _.defaults(this.chartArgs.xAxis || {}, {
+      this.chartArgs.xAxis = _.defaults(this.chartArgs.xAxis || {}, {
         type: 'datetime'
+      });
+      return this.chartArgs.yAxis = _.defaults(this.chartArgs.yAxis || {}, {
+        endOnTick: false
       });
     };
 
