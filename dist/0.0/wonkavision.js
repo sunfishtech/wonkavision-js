@@ -450,7 +450,10 @@ OTHER DEALINGS IN THE SOFTWARE.
     };
 
     Filter.prototype.toString = function() {
-      return [this.memberType, this.name, this.attributeName, this.operator, (this.value || "").toString()].join("::");
+      if (this.value === null) {
+        this.value = "";
+      }
+      return [this.memberType, this.name, this.attributeName, this.operator, this.value.toString()].join("::");
     };
 
     Filter.prototype.parse = function(filterString, delim) {

@@ -12,7 +12,9 @@ this.Wonkavision.Filter = class Filter
 
   isFact: => @memberType == "fact"
 
-  toString : -> [@memberType,@name,@attributeName,@operator,(@value || "").toString()].join("::")
+  toString : ->
+    @value = "" if @value == null
+    [@memberType,@name,@attributeName,@operator,@value.toString()].join("::")
 
   parse : (filterString, delim = "::") ->
     parts = filterString.split(delim)
