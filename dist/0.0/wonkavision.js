@@ -1638,11 +1638,18 @@ OTHER DEALINGS IN THE SOFTWARE.
       }
     };
 
-    Dimension.prototype.sortBy = function(sortFunc) {
-      this.members = this.rawMembers();
-      this.members = _.sortBy(this.members, sortFunc);
-      if (this.axis.cellset.includeTotals) {
-        return this.members.push(this.createTotalMember());
+    Dimension.prototype.sortBy = function(sortFunc, excludeTotals) {
+      if (excludeTotals == null) {
+        excludeTotals = true;
+      }
+      if (excludeTotals) {
+        this.members = this.rawMembers();
+        this.members = _.sortBy(this.members, sortFunc);
+        if (this.axis.cellset.includeTotals) {
+          return this.members.push(this.createTotalMember());
+        }
+      } else {
+        return this.members = _.sortBy(this.members, sortFunc);
       }
     };
 

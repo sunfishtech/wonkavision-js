@@ -16,11 +16,15 @@ this.Wonkavision.Dimension = class Dimension
     else
       @members
 
-  sortBy : (sortFunc) ->
-    @members = @rawMembers()
-    @members = _.sortBy(@members, sortFunc)  
-    if @axis.cellset.includeTotals
-      @members.push(@createTotalMember())
+  sortBy : (sortFunc,excludeTotals = true) ->
+    if excludeTotals
+      @members = @rawMembers()
+      @members = _.sortBy(@members, sortFunc)  
+      if @axis.cellset.includeTotals
+        @members.push(@createTotalMember())
+    else
+      @members = _.sortBy(@members,sortFunc)
+
 
   createTotalMember: -> new Member(this, {key:null, caption:"#{@name}_total", totals:true})
 
