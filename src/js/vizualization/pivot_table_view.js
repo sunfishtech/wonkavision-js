@@ -45,6 +45,9 @@
           return "-";
         }
       });
+      this.formatCell = args.formatCell || (function(tableCell, idx, cell) {
+        return cell;
+      });
       this.smooth = args.smooth;
       if (this.smooth) {
         this.smoothingMethod = args.smoothingMethod;
@@ -181,9 +184,9 @@
       this.renderer || (this.renderer = function(tableCell, idx, cell) {
         var _ref;
 
-        return d3.select(cell).attr("data-wv-filters", (_ref = tableCell.cell) != null ? _ref.filters.join(",") : void 0).text(function(tc) {
+        return _this.formatCell(tableCell, idx, d3.select(cell).attr("data-wv-filters", (_ref = tableCell.cell) != null ? _ref.filters.join(",") : void 0).text(function(tc) {
           return _this.formatData(tc);
-        });
+        }));
       });
       return this.renderer(tableCell, idx, cell);
     };

@@ -32,6 +32,7 @@ this.Wonkavision.PivotTableView = class PivotTableView
     @renderer = if @viewType == "text" then args.cellRenderer else @createRenderer(args) 
     @formatLabel = args.formatLabel || (l) -> l
     @formatData = args.formatData || ((d) -> if d.formattedValue? then d.formattedValue else "-")
+    @formatCell = args.formatCell || ((tableCell, idx, cell) -> cell)
     @smooth = args.smooth
     if @smooth
       @smoothingMethod = args.smoothingMethod
@@ -135,9 +136,9 @@ this.Wonkavision.PivotTableView = class PivotTableView
 
   renderCell : (tableCell, idx, cell) ->
     @renderer ||= (tableCell, idx, cell) =>
-      d3.select(cell).
+      @formatCell(tableCell, idx, d3.select(cell).
         attr("data-wv-filters",tableCell.cell?.filters.join(",")).
-        text((tc) => @formatData(tc))
+        text((tc) => @formatData(tc)))
     @renderer(tableCell, idx, cell)
 
   renderGraph : (chartCell, idx, cell) ->

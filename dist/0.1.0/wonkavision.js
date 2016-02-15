@@ -1,4 +1,4 @@
-/*  wonkavision.js, version 0.0.1
+/*  wonkavision.js, version 0.1.0
 
 Copyright (c) 2011 [your name here]
 
@@ -2313,7 +2313,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       this.renderer || (this.renderer = function(tableCell, idx, cell) {
         var _ref;
 
-        return _this.formatCell(d3.select(cell).attr("data-wv-filters", (_ref = tableCell.cell) != null ? _ref.filters.join(",") : void 0).text(function(tc) {
+        return _this.formatCell(tableCell, idx, d3.select(cell).attr("data-wv-filters", (_ref = tableCell.cell) != null ? _ref.filters.join(",") : void 0).text(function(tc) {
           return _this.formatData(tc);
         }));
       });
